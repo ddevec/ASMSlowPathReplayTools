@@ -1,0 +1,73 @@
+<project name="SlowPath" default="jar" basedir=".">
+
+    <property name="src.dir" value="src"/>
+
+    <property name="build.dir" value="build"/>
+    <property name="classes.dir" value="${build.dir}/classes"/>
+    <property name="jar.dir" value="${build.dir}/jar"/>
+
+    <!--
+    <property name="test-class"
+        value="org.ddevec.slowpath.test.CopyClass1"/>
+    -->
+    <property name="test-class"
+        value="org.ddevec.slowpath.test.DuplicateClass1"/>
+
+    <property name="out-jar" value="${jar.dir}/${ant.project.name}.jar"/>
+    <property name="asm-debug-jar" value="asm-debug-all-5.2.jar"/>
+    <!--
+    <property name="asm-jar" value="asm-5.2.jar"/>
+    <property name="asm-util-jar" value="asm-util-5.2.jar"/>
+    <property name="asm-tree-jar" value="asm-tree-5.2.jar"/>
+    -->
+
+    <path id="build-classpath">
+        <pathelement path="${asm-debug-jar}"/>
+        <!--
+        <pathelement path="${asm-jar}"/>
+        <pathelement path="${asm-util-jar}"/>
+        <pathelement path="${asm-tree-jar}"/>
+        -->
+    </path>
+
+    <path id="run-classpath">
+        <pathelement path="${out-jar}"/>
+        <pathelement path="${asm-debug-jar}"/>
+        <!--
+        <pathelement path="${asm-jar}"/>
+        <pathelement path="${asm-util-jar}"/>
+        <pathelement path="${asm-tree-jar}"/>
+        -->
+    </path>
+
+    <target name="clean">
+        <delete dir="build"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="${classes.dir}"/>
+        <javac includeantruntime="false" srcdir="${src.dir}"
+               destdir="${classes.dir}" debug="true">
+            <src path="${src.dir}"/>
+            <classpath>
+                <path refid="build-classpath"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="jar" depends="compile">
+        <mkdir dir="${jar.dir}"/>
+        <jar destfile="${jar.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+        </jar>
+    </target>
+
+    <target name="test" depends="jar">
+        <java fork="true" classname="${test-class}">
+            <classpath>
+                <path refid="run-classpath"/>
+            </classpath>
+        </java>
+    </target>
+
+</project>
+ 
