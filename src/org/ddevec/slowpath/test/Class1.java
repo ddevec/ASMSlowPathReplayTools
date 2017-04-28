@@ -3,7 +3,7 @@ package org.ddevec.slowpath.test;
 import org.ddevec.slowpath.runtime.MisSpecException;
 
 public class Class1 {
-  public static void main(String[] args) throws MisSpecException {
+  public static void main(String[] args) {
     Class1 c1 = new Class1();
 
     c1.printFoo();
@@ -30,9 +30,9 @@ public class Class1 {
     bar = 0;
   }
 
-  public void copyFoo() throws MisSpecException {
+  public void copyFoo() {
     bar = foo;
-    throw new MisSpecException("test");
+    MisSpecException.doMisSpec();
   }
 
   public void printFoo() {

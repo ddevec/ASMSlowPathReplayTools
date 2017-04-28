@@ -13,8 +13,12 @@
     <property name="test-class"
         value="org.ddevec.slowpath.test.DuplicateClass1"/>
 
+    <property name="inst-class"
+        value="org.ddevec.slowpath.tools.ClassInstrumentor"/>
+
     <property name="out-jar" value="${jar.dir}/${ant.project.name}.jar"/>
     <property name="asm-debug-jar" value="asm-debug-all-5.2.jar"/>
+    <property name="args4j-jar" value="args4j-2.33.jar"/>
     <!--
     <property name="asm-jar" value="asm-5.2.jar"/>
     <property name="asm-util-jar" value="asm-util-5.2.jar"/>
@@ -23,6 +27,7 @@
 
     <path id="build-classpath">
         <pathelement path="${asm-debug-jar}"/>
+        <pathelement path="${args4j-jar}"/>
         <!--
         <pathelement path="${asm-jar}"/>
         <pathelement path="${asm-util-jar}"/>
@@ -33,6 +38,7 @@
     <path id="run-classpath">
         <pathelement path="${out-jar}"/>
         <pathelement path="${asm-debug-jar}"/>
+        <pathelement path="${args4j-jar}"/>
         <!--
         <pathelement path="${asm-jar}"/>
         <pathelement path="${asm-util-jar}"/>
@@ -42,6 +48,7 @@
 
     <target name="clean">
         <delete dir="build"/>
+        <delete dir="test_out"/>
     </target>
 
     <target name="compile">
@@ -49,6 +56,8 @@
         <javac includeantruntime="false" srcdir="${src.dir}"
                destdir="${classes.dir}" debug="true">
             <src path="${src.dir}"/>
+            <compilerarg value="-Xlint:deprecation"/>
+            <compilerarg value="-Xlint:unchecked"/>
             <classpath>
                 <path refid="build-classpath"/>
             </classpath>
@@ -66,6 +75,18 @@
             <classpath>
                 <path refid="run-classpath"/>
             </classpath>
+        </java>
+    </target>
+
+    <target name="inst" depends="jar">
+        <java fork="true" classname="${inst-class}">
+            <classpath>
+                <path refid="run-classpath"/>
+            </classpath>
+
+            <arg value="-i"/>
+            <arg value="org.ddevec.slowpath.test.TestSimpleVisitor"/>
+            <arg value="org.ddevec.slowpath.test.Class1"/>
         </java>
     </target>
 

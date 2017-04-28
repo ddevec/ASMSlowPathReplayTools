@@ -6,6 +6,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 
 import java.util.ArrayList;
@@ -20,17 +21,22 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
   public static final String misSpecClass =
     "org/ddevec/slowpath/runtime/MisSpecException";
 
+  public static final String flagClassName =
+    "org/ddevec/slowpath/runtime/MisSpecException";
+  public static final String flagVarName =
+    "slowFlag";
+  public static final String flagType =
+    Type.BOOLEAN_TYPE.getDescriptor();
+
   private int bci = 0;
   private int retType = 0;
   private boolean foundRet;
   private boolean insAfterSpecial;
   private MethodVisitor mv2;
-  private Runnable firstFrame;
 
   private ArrayList<Runnable> visitAtEnd;
   private HashMap<Label, Label> labelRemap;
 
-  private Label lbl0;
   private Label fast_end;
   private Label slow_start;
   private Label end;
@@ -53,6 +59,7 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
 
     if (ret == null) {
       ret = new Label();
+      //System.out.println("LabelRemap: " + orig + " -> " + ret);
       labelRemap.put(orig, ret);
     }
 
@@ -65,14 +72,28 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
     }
   }
 
+  private void doDuplicateMethod() {
+    // Ensure this is run exactly once
+    assert(foundRet == false);
+    foundRet = true;
+    super.visitLabel(fast_end);
+    //super.visitInsn(opcode);
+    mv2.visitLabel(slow_start);
+
+    for (Runnable visit : visitAtEnd) {
+      visit.run();
+    }
+
+    super.visitLabel(end);
+    mv2.visitInsn(retType);
+  }
+
   @Override
   public void visitCode() {
-    firstFrame = null;
     foundRet = false;
 
     labelRemap.clear();
 
-    lbl0 = new Label();
     fast_end = new Label();
     slow_start = new Label();
     end = new Label();
@@ -85,14 +106,10 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
 
     super.visitCode();
 
-    super.visitTryCatchBlock(lbl0, fast_end, slow_start,
-        misSpecClass);
-
     if (methodName.equals("<init>")) {
       insAfterSpecial = true;
     } else {
       insAfterSpecial = false;
-      super.visitLabel(lbl0);
     }
   }
 
@@ -110,23 +127,12 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
   @Override
   public void visitFrame(int type, int nLocal, Object[] local, int nStack,
       Object[] stack) {
-    System.out.println("  " + bci + ": OrigFrame " + type + ": " + nLocal + ", " + nStack);
-    if (firstFrame == null) {
-      firstFrame = new Runnable() {
+    addRunner(new Runnable() {
           public void run() {
-            System.out.println("  " + bci + ": HandlerFrame " + type + ": " + nLocal +
-                ", " + 1);
-            mv.visitFrame(F_FULL, nLocal, local, 1, new Object[] {misSpecClass});
+            System.out.println("  " + bci + ": NewFrame " + type + ": " + nLocal + ", " + nStack);
+            mv2.visitFrame(type, nLocal, local, nStack, stack);
           }
-        };
-    } else {
-      addRunner(new Runnable() {
-            public void run() {
-              System.out.println("  " + bci + ": NewFrame " + type + ": " + nLocal + ", " + nStack);
-              mv2.visitFrame(type, nLocal, local, nStack, stack);
-            }
-          });
-    }
+        });
 
     super.visitFrame(type, nLocal, local, nStack, stack);
   }
@@ -136,9 +142,11 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
     addRunner(new Runnable() {
           public void run() {
             Label remap = labelRemap(lbl);
+            //System.out.println("REVisitLabel: " + remap);
             mv2.visitLabel(remap);
           }
         });
+    //System.out.println("VisitLabel: " + lbl);
     super.visitLabel(lbl);
   }
 
@@ -166,14 +174,6 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
           });
       super.visitInsn(opcode);
     }
-    /*
-    addRunner(new Runnable() {
-          public void run() {
-            mv2.visitInsn(opcode);
-          }
-        });
-    super.visitInsn(opcode);
-    */
   }
 
   @Override
@@ -220,15 +220,24 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
   @Override
   public void visitMethodInsn(int opcode, String owner,
       String name, String desc, boolean itf) {
+    Label slow = new Label();
     addRunner(new Runnable() {
           public void run() {
             mv2.visitMethodInsn(opcode, owner, name, desc, itf);
+
+            // Add slowpath label
+            mv2.visitLabel(slow);
+            // Do I need to add branch?
           }
         });
     super.visitMethodInsn(opcode, owner, name, desc, itf);
+    if (!insAfterSpecial) {
+      super.visitFieldInsn(GETSTATIC, flagClassName, flagVarName, flagType);
+      // branch to slow if flag is not zero
+      super.visitJumpInsn(IFNE, slow);
+    }
     if (insAfterSpecial && opcode == INVOKESPECIAL) {
       insAfterSpecial = false;
-      super.visitLabel(lbl0);
     }
   }
 
@@ -327,6 +336,7 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
           public void run() {
             Label startRemap = labelRemap(start);
             Label endRemap = labelRemap(end);
+            //System.out.println("!--! startRemap: " + startRemap);
             mv2.visitLocalVariable(name, desc, signature, startRemap, endRemap, index);
           }
         });
@@ -346,27 +356,7 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
 
   @Override
   public void visitMaxs(int maxStack, int maxLocals) {
-    // Ensure this is run exactly once
-    assert(foundRet == false);
-    foundRet = true;
-    super.visitLabel(fast_end);
-    //super.visitInsn(opcode);
-    mv2.visitLabel(slow_start);
-    if (firstFrame != null) {
-      firstFrame.run();
-    } else {
-      mv2.visitFrame(F_SAME1, 0, null, 1, new Object[]{misSpecClass});
-    }
-
-    // Pop stack frame?
-    mv2.visitInsn(POP);
-
-    for (Runnable visit : visitAtEnd) {
-      visit.run();
-    }
-
-    super.visitLabel(end);
-    mv2.visitInsn(retType);
+    doDuplicateMethod();
 
     super.visitMaxs(maxStack, maxLocals);
   }

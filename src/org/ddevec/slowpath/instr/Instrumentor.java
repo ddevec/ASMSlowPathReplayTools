@@ -15,32 +15,16 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-public abstract class Instrumentor {
+public abstract class Instrumentor extends Analysis {
   String basedir;
   public Instrumentor(String basedir) {
     this.basedir = basedir;
   }
 
+  ClassWriter writer;
+
   public void instrument(String classname) throws IOException {
-    URL resource = getClassFile(classname);
-
-    if (resource == null) {
-      throw new IOException("Couldn't find Resource: " + classname);
-    }
-
-    InputStream is = null;
-    is = resource.openStream();
-
-    ClassReader cr = null;
-
-    cr = new ClassReader(is);
-    
-
-    ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES);
-    ClassVisitor cv = getClassVisitor(cw);
-    cr.accept(cv, 0);
-
-    is.close();
+    analyze(classname);
 
     OutputStream os = null;
     String ofilstr = getOutputName(classname);
@@ -52,27 +36,20 @@ public abstract class Instrumentor {
     }
     os = new FileOutputStream(ofil);
 
-    os.write(cw.toByteArray());
+    os.write(writer.toByteArray());
     os.close();
+    writer = null;
+  }
+
+  public ClassVisitor getClassVisitor() {
+    writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+    return getClassVisitor(writer);
   }
 
   public abstract ClassVisitor getClassVisitor(ClassVisitor cv);
 
-  public URL getClassFile(String classname) {
-    ClassLoader cl = getClass().getClassLoader();
-
-    String resourceName = classNameToClassFile(classname);
-
-    URL resource = cl.getResource(resourceName);
-    return resource;
-  }
-
   public String getOutputName(String classname) {
     return basedir + '/' + classNameToClassFile(classname);
-  }
-
-  public final static String classNameToClassFile(String classname) {
-    return classname.replace('.', '/') + ".class";
   }
 }
 

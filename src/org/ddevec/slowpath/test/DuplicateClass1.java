@@ -10,6 +10,9 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URL;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.ClassVisitor;
@@ -22,6 +25,8 @@ import org.objectweb.asm.util.CheckMethodAdapter;
 
 import org.ddevec.slowpath.instr.Instrumentor;
 import org.ddevec.slowpath.CloneMethodVisitor;
+import org.ddevec.slowpath.SlowPathRetarget;
+import org.ddevec.slowpath.MethodDuplicator;
 
 
 public class DuplicateClass1 {
@@ -47,89 +52,6 @@ public class DuplicateClass1 {
       inst.instrument(classname);
     } catch (IOException ex) {
       handleError(ex);
-    }
-  }
-
-  static class TestClassVisitor extends ClassVisitor implements Opcodes {
-    public TestClassVisitor(int api, ClassVisitor cv) {
-      super(api, cv);
-    }
-
-    public MethodVisitor visitMethod(int access, String name, String desc,
-        String signature, String[] exceptions) {
-      System.out.println("Visiting method: " + name);
-      System.out.println("  Desc: " + desc);
-      System.out.println("  Sig: " + signature);
-      MethodVisitor mv = null;
-      if (cv != null) {
-        mv = cv.visitMethod(access, name, desc, signature, exceptions);
-      } else {
-        System.err.println("No MV?");
-        return null;
-      }
-
-      MethodVisitor mv1 = new MethodVisitor(ASM5, mv) {
-        int bci;
-
-        @Override
-        public void visitCode() {
-          visitFieldInsn(GETSTATIC, "java/lang/System", "err",
-              "Ljava/io/PrintStream;");
-          visitLdcInsn("In FastPath: " + name + "!");
-          visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println",
-              "(Ljava/lang/String;)V", false);
-
-          super.visitCode();
-        }
-
-        @Override
-        public void visitByteCodeIndex(int bci) {
-          this.bci = bci;
-          super.visitByteCodeIndex(bci);
-        }
-
-        @Override
-        public void visitFrame(int type, int nLocal, Object[] local, int nStack,
-            Object[] stack) {
-          System.out.println("FP Frame: " + bci);
-          super.visitFrame(type, nLocal, local, nStack, stack);
-        }
-
-      };
-
-      MethodVisitor mv2 = new MethodVisitor(ASM5, mv) {
-        int bci;
-
-        @Override
-        public void visitCode() {
-          visitFieldInsn(GETSTATIC, "java/lang/System", "err",
-              "Ljava/io/PrintStream;");
-          visitLdcInsn("In SlowPath: " + name + "!");
-          visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println",
-              "(Ljava/lang/String;)V", false);
-
-          super.visitCode();
-        }
-
-        @Override
-        public void visitByteCodeIndex(int bci) {
-          this.bci = bci;
-          super.visitByteCodeIndex(bci);
-        }
-
-        @Override
-        public void visitFrame(int type, int nLocal, Object[] local, int nStack,
-            Object[] stack) {
-          System.out.println("SP Frame: " + bci);
-          super.visitFrame(type, nLocal, local, nStack, stack);
-        }
-      };
-
-      mv = new CheckMethodAdapter(mv);
-
-      mv = new CloneMethodVisitor(ASM5, name, mv1, mv2);
-
-      return mv;
     }
   }
 }
