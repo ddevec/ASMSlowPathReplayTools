@@ -5,6 +5,9 @@
     <property name="build.dir" value="build"/>
     <property name="classes.dir" value="${build.dir}/classes"/>
     <property name="jar.dir" value="${build.dir}/jar"/>
+    <property name="lib.dir" value="lib"/>
+
+    <property name="manifest.file" value="${build.dir}/META-INF/MANIFEST.MF"/>
 
     <!--
     <property name="test-class"
@@ -17,8 +20,8 @@
         value="org.ddevec.slowpath.tools.ClassInstrumentor"/>
 
     <property name="out-jar" value="${jar.dir}/${ant.project.name}.jar"/>
-    <property name="asm-debug-jar" value="asm-debug-all-5.2.jar"/>
-    <property name="args4j-jar" value="args4j-2.33.jar"/>
+    <property name="asm-debug-jar" value="${lib.dir}/asm-debug-all-5.2.jar"/>
+    <property name="args4j-jar" value="${lib.dir}/args4j-2.33.jar"/>
     <!--
     <property name="asm-jar" value="asm-5.2.jar"/>
     <property name="asm-util-jar" value="asm-util-5.2.jar"/>
@@ -66,7 +69,17 @@
 
     <target name="jar" depends="compile">
         <mkdir dir="${jar.dir}"/>
-        <jar destfile="${jar.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+        <mkdir dir="${build.dir}/META-INF"/>
+
+        <manifest file="${manifest.file}">
+            <attribute name="Class-Path" value="SlowPath.jar"/>
+            <attribute name="Main-Class" value="${inst-class}"/>
+        </manifest>
+
+        <jar destfile="${jar.dir}/${ant.project.name}.jar"
+                basedir="${classes.dir}" manifest="${manifest.file}">
+            <fileset dir="${classes.dir}" includes="**/*.class" />
+            <zipgroupfileset dir="${lib.dir}" includes="*.jar" />
         </jar>
     </target>
 
@@ -85,7 +98,7 @@
             </classpath>
 
             <arg value="-i"/>
-            <arg value="org.ddevec.slowpath.test.TestSimpleVisitor"/>
+            <arg value="org.ddevec.slowpath.test.TestClassVisitor"/>
             <arg value="org.ddevec.slowpath.test.Class1"/>
         </java>
     </target>

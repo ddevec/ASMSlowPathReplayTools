@@ -24,9 +24,9 @@ import org.objectweb.asm.util.TraceMethodVisitor;
 import org.objectweb.asm.util.CheckMethodAdapter;
 
 import org.ddevec.slowpath.instr.Instrumentor;
-import org.ddevec.slowpath.CloneMethodVisitor;
-import org.ddevec.slowpath.SlowPathRetarget;
-import org.ddevec.slowpath.MethodDuplicator;
+import org.ddevec.slowpath.instr.CloneMethodVisitor;
+import org.ddevec.slowpath.instr.SlowPathRetarget;
+import org.ddevec.slowpath.instr.MethodDuplicator;
 
 
 public class DuplicateClass1 {

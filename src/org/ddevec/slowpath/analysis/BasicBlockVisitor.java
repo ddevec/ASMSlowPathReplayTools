@@ -1,4 +1,4 @@
-package org.ddevec.slowpath;
+package org.ddevec.slowpath.analysis;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;

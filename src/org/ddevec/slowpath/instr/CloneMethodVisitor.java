@@ -1,4 +1,4 @@
-package org.ddevec.slowpath;
+package org.ddevec.slowpath.instr;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
@@ -129,7 +129,7 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
       Object[] stack) {
     addRunner(new Runnable() {
           public void run() {
-            System.out.println("  " + bci + ": NewFrame " + type + ": " + nLocal + ", " + nStack);
+            //System.out.println("  " + bci + ": NewFrame " + type + ": " + nLocal + ", " + nStack);
             mv2.visitFrame(type, nLocal, local, nStack, stack);
           }
         });
@@ -313,6 +313,16 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
           }
         });
     super.visitLookupSwitchInsn(dflt, keys, labels);
+  }
+
+  @Override
+  public void visitMultiANewArrayInsn(String desc, int dims) {
+    addRunner(new Runnable() {
+          public void run() {
+            mv2.visitMultiANewArrayInsn(desc, dims);
+          }
+        });
+    super.visitMultiANewArrayInsn(desc, dims);
   }
 
   @Override

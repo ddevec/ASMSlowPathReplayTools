@@ -1,4 +1,4 @@
-package org.ddevec.slowpath;
+package org.ddevec.slowpath.instr;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
@@ -28,7 +28,6 @@ public class SlowPathRetarget extends MethodVisitor implements Opcodes {
     // Adjust target to -- slowpath
     // EXCEPT: java.lang
     // Ignore <init> -- UGH
-    System.out.println("Owner: " + owner);
     if (name.equals("<init>") ||
         name.equals("<clinit>") ||
         owner.startsWith("java/lang") ||
