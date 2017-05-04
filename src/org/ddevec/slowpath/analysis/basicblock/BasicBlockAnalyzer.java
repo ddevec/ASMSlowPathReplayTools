@@ -33,6 +33,7 @@ package org.ddevec.slowpath.analysis.basicblock;
 import static org.ddevec.utils.ArrayUtils.toArray;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -45,15 +46,15 @@ import org.objectweb.asm.tree.analysis.Value;
 
 public class BasicBlockAnalyzer<V extends Value> extends Analyzer<V> {
 
-    Set<Integer>[] successors;
+    private Set<Integer>[] successors;
 
-    Set<Integer>[] predecessors;
+    private Set<Integer>[] predecessors;
 
-    int[][] blocks;
+    private int[][] blocks;
 
-    int[] leaders;
+    private int[] leaders;
 
-    int n;
+    private int n;
 
     public BasicBlockAnalyzer(final Interpreter<V> interpreter) {
         super(interpreter);
@@ -85,7 +86,7 @@ public class BasicBlockAnalyzer<V extends Value> extends Analyzer<V> {
         int basicBlock = 0;
         queue[top++] = 0;
         queued[0] = true;
-        final IntList list = new IntList();
+        final ArrayList<Integer> list = new ArrayList<Integer>();
 
         while (top > 0) {
             int i = queue[--top];
@@ -100,7 +101,7 @@ public class BasicBlockAnalyzer<V extends Value> extends Analyzer<V> {
                 leaders[i] = basicBlock;
                 list.add(i);
             }
-            blocks[basicBlock] = list.toArray();
+            blocks[basicBlock] = toArray(list, new int[0]);
             list.clear();
             basicBlock++;
             for (final int succ : successors[i]) {

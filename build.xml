@@ -122,11 +122,15 @@
         <java fork="true" classname="${analysis-class}">
             <classpath>
                 <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
             </classpath>
 
             <arg value="-a"/>
             <arg value="org.ddevec.slowpath.analysis.FindNewCall"/>
-            <arg value="org.ddevec.slowpath.test.Class1"/>
+            <arg value="org.dacapo.harness.ChordHarness"/>
         </java>
     </target>
 
