@@ -19,6 +19,9 @@
     <property name="inst-class"
         value="org.ddevec.slowpath.tools.ClassInstrumentor"/>
 
+    <property name="analysis-class"
+        value="org.ddevec.slowpath.tools.ClassAnalyzer"/>
+
     <property name="out-jar" value="${jar.dir}/${ant.project.name}.jar"/>
     <property name="asm-debug-jar" value="${lib.dir}/asm-debug-all-5.2.jar"/>
     <property name="args4j-jar" value="${lib.dir}/args4j-2.33.jar"/>
@@ -91,6 +94,18 @@
         </java>
     </target>
 
+    <target name="simple" depends="jar">
+        <java fork="true" classname="${inst-class}">
+            <classpath>
+                <path refid="run-classpath"/>
+            </classpath>
+
+            <arg value="-i"/>
+            <arg value="org.ddevec.slowpath.test.TestSimpleVisitor"/>
+            <arg value="org.ddevec.slowpath.test.Class1"/>
+        </java>
+    </target>
+
     <target name="inst" depends="jar">
         <java fork="true" classname="${inst-class}">
             <classpath>
@@ -102,6 +117,19 @@
             <arg value="org.ddevec.slowpath.test.Class1"/>
         </java>
     </target>
+
+    <target name="analyze" depends="jar">
+        <java fork="true" classname="${analysis-class}">
+            <classpath>
+                <path refid="run-classpath"/>
+            </classpath>
+
+            <arg value="-a"/>
+            <arg value="org.ddevec.slowpath.analysis.FindNewCall"/>
+            <arg value="org.ddevec.slowpath.test.Class1"/>
+        </java>
+    </target>
+
 
 </project>
  

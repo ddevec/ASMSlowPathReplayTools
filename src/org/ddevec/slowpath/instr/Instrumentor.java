@@ -42,7 +42,9 @@ public abstract class Instrumentor extends Analysis {
   }
 
   public ClassVisitor getClassVisitor() {
-    writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+    writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES +
+        ClassWriter.COMPUTE_MAXS);
+
     return getClassVisitor(writer);
   }
 
