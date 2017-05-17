@@ -31,7 +31,7 @@ package org.ddevec.slowpath.analysis.defuse;
 
 public interface DefUseChainSearch {
 
-    DefUseChain[] search(final DefUseFrame[] frames, final Variable[] variables,
+    DefUseChain[] search(final DefUseFrame[] frames, final Value[] variables,
             final int[][] adjacencyListSucc, final int[][] adjacencyListPred);
 
 }

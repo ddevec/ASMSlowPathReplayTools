@@ -22,10 +22,17 @@
     <property name="analysis-class"
         value="org.ddevec.slowpath.tools.ClassAnalyzer"/>
 
+    <property name="rr-class"
+        value="org.ddevec.slowpath.tools.DoRRInst"/>
+
     <property name="out-jar" value="${jar.dir}/${ant.project.name}.jar"/>
     <property name="asm-debug-jar" value="${lib.dir}/asm-debug-all-5.2.jar"/>
     <property name="args4j-jar" value="${lib.dir}/args4j-2.33.jar"/>
+    <property name="jgrapht-jar" value="${lib.dir}/jgrapht-core-1.0.1.jar"/>
+
+    <property name="rr-classes" value="/home/ddevec/OptFT/RoadRunner/classes"/>
     <!--
+    <property name="jgrapht-jar" value="${lib.dir}/jgrapht-1.0.1.jar"/>
     <property name="asm-jar" value="asm-5.2.jar"/>
     <property name="asm-util-jar" value="asm-util-5.2.jar"/>
     <property name="asm-tree-jar" value="asm-tree-5.2.jar"/>
@@ -34,6 +41,8 @@
     <path id="build-classpath">
         <pathelement path="${asm-debug-jar}"/>
         <pathelement path="${args4j-jar}"/>
+        <pathelement path="${jgrapht-jar}"/>
+        <pathelement path="${rr-classes}"/>
         <!--
         <pathelement path="${asm-jar}"/>
         <pathelement path="${asm-util-jar}"/>
@@ -45,6 +54,9 @@
         <pathelement path="${out-jar}"/>
         <pathelement path="${asm-debug-jar}"/>
         <pathelement path="${args4j-jar}"/>
+        <pathelement path="${jgrapht-jar}"/>
+        <pathelement path="${rrloader-jar}"/>
+        <pathelement path="${rr-classes}"/>
         <!--
         <pathelement path="${asm-jar}"/>
         <pathelement path="${asm-util-jar}"/>
@@ -113,7 +125,7 @@
             </classpath>
 
             <arg value="-i"/>
-            <arg value="org.ddevec.slowpath.test.TestClassVisitor"/>
+            <arg value="org.ddevec.slowpath.instr.SlowPathVisitor"/>
             <arg value="org.ddevec.slowpath.test.Class1"/>
         </java>
     </target>
@@ -130,6 +142,26 @@
 
             <arg value="-a"/>
             <arg value="org.ddevec.slowpath.analysis.FindNewCall"/>
+            <arg value="org.dacapo.harness.ChordHarness"/>
+        </java>
+    </target>
+
+    <target name="rr" depends="jar">
+        <java fork="true" classname="${rr-class}">
+            <classpath>
+                <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+            </classpath>
+
+            <arg value="--outdir"/>
+            <arg value="test_out/RRInst"/>
             <arg value="org.dacapo.harness.ChordHarness"/>
         </java>
     </target>

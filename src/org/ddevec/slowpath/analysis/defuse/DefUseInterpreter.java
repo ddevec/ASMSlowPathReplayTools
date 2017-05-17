@@ -94,41 +94,41 @@ public class DefUseInterpreter extends Interpreter<Value> implements Opcodes {
         case ICONST_3:
         case ICONST_4:
         case ICONST_5:
-            return Value.INT_VALUE;
+            return Value.INT_VALUE.with(insn);
         case LCONST_0:
         case LCONST_1:
-            return Value.LONG_VALUE;
+            return Value.LONG_VALUE.with(insn);
         case FCONST_0:
         case FCONST_1:
         case FCONST_2:
-            return Value.FLOAT_VALUE;
+            return Value.FLOAT_VALUE.with(insn);
         case DCONST_0:
         case DCONST_1:
-            return Value.DOUBLE_VALUE;
+            return Value.DOUBLE_VALUE.with(insn);
         case BIPUSH:
         case SIPUSH:
-            return Value.INT_VALUE;
+            return Value.INT_VALUE.with(insn);
         case LDC: {
             final Object cst = ((LdcInsnNode) insn).cst;
             if (cst instanceof Integer) {
-                return Value.INT_VALUE;
+                return Value.INT_VALUE.with(insn);
             } else if (cst instanceof Float) {
-                return Value.FLOAT_VALUE;
+                return Value.FLOAT_VALUE.with(insn);
             } else if (cst instanceof Long) {
-                return Value.LONG_VALUE;
+                return Value.LONG_VALUE.with(insn);
             } else if (cst instanceof Double) {
-                return Value.DOUBLE_VALUE;
+                return Value.DOUBLE_VALUE.with(insn);
             } else if (cst instanceof String) {
-                return Value.REFERENCE_VALUE;
+                return Value.REFERENCE_VALUE.with(insn);
             } else if (cst instanceof Type) {
                 final int sort = ((Type) cst).getSort();
                 if (sort == Type.OBJECT || sort == Type.ARRAY || sort == Type.METHOD) {
-                    return Value.REFERENCE_VALUE;
+                    return Value.REFERENCE_VALUE.with(insn);
                 } else {
                     throw new IllegalArgumentException("Illegal LDC constant " + cst);
                 }
             } else if (cst instanceof Handle) {
-                return Value.REFERENCE_VALUE;
+                return Value.REFERENCE_VALUE.with(insn);
             } else {
                 throw new IllegalArgumentException("Illegal LDC constant " + cst);
             }
@@ -142,7 +142,7 @@ public class DefUseInterpreter extends Interpreter<Value> implements Opcodes {
         }
         case NEW: {
             final TypeInsnNode type = (TypeInsnNode) insn;
-            return new ObjectRef(Type.getObjectType(type.desc));
+            return new ObjectRef(Type.getObjectType(type.desc)).with(insn);
         }
         default:
             throw new IllegalArgumentException("Invalid instruction opcode.");
@@ -158,7 +158,7 @@ public class DefUseInterpreter extends Interpreter<Value> implements Opcodes {
         case DLOAD:
         case ALOAD: {
             final VarInsnNode v = (VarInsnNode) insn;
-            return new Local(value.type, v.var);
+            return new Local(value.type, v.var).with(insn);
         }
         case ISTORE:
         case LSTORE:
@@ -173,12 +173,13 @@ public class DefUseInterpreter extends Interpreter<Value> implements Opcodes {
         case DUP2_X1:
         case DUP2_X2:
         case SWAP:
-            return value;
+            return value.with(insn);
         default:
             throw new IllegalArgumentException("Invalid instruction opcode.");
         }
     }
 
+    // FIXME: These should all return a stackvalue...
     @Override
     public Value unaryOperation(final AbstractInsnNode insn, final Value value) {
         switch (insn.getOpcode()) {
@@ -190,35 +191,35 @@ public class DefUseInterpreter extends Interpreter<Value> implements Opcodes {
         case IINC:
             return Value.INT_VALUE.with(insn);
         case I2L:
-            return new ValueHolder(Type.LONG_TYPE, value);
+            return new ValueHolder(Type.LONG_TYPE, value).with(insn);
         case I2F:
-            return new ValueHolder(Type.FLOAT_TYPE, value);
+            return new ValueHolder(Type.FLOAT_TYPE, value).with(insn);
         case I2D:
-            return new ValueHolder(Type.DOUBLE_TYPE, value);
+            return new ValueHolder(Type.DOUBLE_TYPE, value).with(insn);
         case L2I:
-            return new ValueHolder(Type.INT_TYPE, value);
+            return new ValueHolder(Type.INT_TYPE, value).with(insn);
         case L2F:
-            return new ValueHolder(Type.FLOAT_TYPE, value);
+            return new ValueHolder(Type.FLOAT_TYPE, value).with(insn);
         case L2D:
-            return new ValueHolder(Type.DOUBLE_TYPE, value);
+            return new ValueHolder(Type.DOUBLE_TYPE, value).with(insn);
         case F2I:
-            return new ValueHolder(Type.INT_TYPE, value);
+            return new ValueHolder(Type.INT_TYPE, value).with(insn);
         case F2L:
-            return new ValueHolder(Type.LONG_TYPE, value);
+            return new ValueHolder(Type.LONG_TYPE, value).with(insn);
         case F2D:
-            return new ValueHolder(Type.DOUBLE_TYPE, value);
+            return new ValueHolder(Type.DOUBLE_TYPE, value).with(insn);
         case D2I:
-            return new ValueHolder(Type.INT_TYPE, value);
+            return new ValueHolder(Type.INT_TYPE, value).with(insn);
         case D2L:
-            return new ValueHolder(Type.LONG_TYPE, value);
+            return new ValueHolder(Type.LONG_TYPE, value).with(insn);
         case D2F:
-            return new ValueHolder(Type.FLOAT_TYPE, value);
+            return new ValueHolder(Type.FLOAT_TYPE, value).with(insn);
         case I2B:
-            return new ValueHolder(Type.BYTE_TYPE, value);
+            return new ValueHolder(Type.BYTE_TYPE, value).with(insn);
         case I2C:
-            return new ValueHolder(Type.CHAR_TYPE, value);
+            return new ValueHolder(Type.CHAR_TYPE, value).with(insn);
         case I2S:
-            return new ValueHolder(Type.SHORT_TYPE, value);
+            return new ValueHolder(Type.SHORT_TYPE, value).with(insn);
         case IFEQ:
         case IFNE:
         case IFLT:
@@ -236,45 +237,45 @@ public class DefUseInterpreter extends Interpreter<Value> implements Opcodes {
             return null;
         case GETFIELD: {
             final FieldInsnNode f = (FieldInsnNode) insn;
-            return new ObjectField(f.owner, f.name, f.desc, value);
+            return new ObjectField(f.owner, f.name, f.desc, value).with(insn);
         }
         case NEWARRAY: {
             final IntInsnNode iinsn = (IntInsnNode) insn;
             switch (iinsn.operand) {
             case T_BOOLEAN:
-                return new ArrayRef(Type.getType("[Z"), value);
+                return new ArrayRef(Type.getType("[Z"), value).with(insn);
             case T_CHAR:
-                return new ArrayRef(Type.getType("[C"), value);
+                return new ArrayRef(Type.getType("[C"), value).with(insn);
             case T_BYTE:
-                return new ArrayRef(Type.getType("[B"), value);
+                return new ArrayRef(Type.getType("[B"), value).with(insn);
             case T_SHORT:
-                return new ArrayRef(Type.getType("[S"), value);
+                return new ArrayRef(Type.getType("[S"), value).with(insn);
             case T_INT:
-                return new ArrayRef(Type.getType("[I"), value);
+                return new ArrayRef(Type.getType("[I"), value).with(insn);
             case T_FLOAT:
-                return new ArrayRef(Type.getType("[F"), value);
+                return new ArrayRef(Type.getType("[F"), value).with(insn);
             case T_DOUBLE:
-                return new ArrayRef(Type.getType("[D"), value);
+                return new ArrayRef(Type.getType("[D"), value).with(insn);
             case T_LONG:
-                return new ArrayRef(Type.getType("[J"), value);
+                return new ArrayRef(Type.getType("[J"), value).with(insn);
             default:
                 throw new IllegalArgumentException("Invalid array type");
             }
         }
         case ANEWARRAY: {
             final TypeInsnNode tinsn = (TypeInsnNode) insn;
-            return new ArrayRef(Type.getType("[" + Type.getObjectType(tinsn.desc)), value);
+            return new ArrayRef(Type.getType("[" + Type.getObjectType(tinsn.desc)), value).with(insn);
         }
         case ARRAYLENGTH:
-            return new ValueHolder(Type.INT_TYPE, value);
+            return new ValueHolder(Type.INT_TYPE, value).with(insn);
         case ATHROW:
             return null;
         case CHECKCAST: {
             final TypeInsnNode tinsn = (TypeInsnNode) insn;
-            return new ValueHolder(Type.getObjectType(tinsn.desc), value);
+            return new ValueHolder(Type.getObjectType(tinsn.desc), value).with(insn);
         }
         case INSTANCEOF:
-            return new ValueHolder(Type.INT_TYPE, value);
+            return new ValueHolder(Type.INT_TYPE, value).with(insn);
         case MONITORENTER:
         case MONITOREXIT:
         case IFNULL:
@@ -290,21 +291,21 @@ public class DefUseInterpreter extends Interpreter<Value> implements Opcodes {
         // no problem not maintain order. javac is generating lookupswitch
         switch (insn.getOpcode()) {
         case IALOAD:
-            return new ArrayValue(Type.INT_TYPE, value1, value2);
+            return new ArrayValue(Type.INT_TYPE, value1, value2).with(insn);
         case LALOAD:
-            return new ArrayValue(Type.LONG_TYPE, value1, value2);
+            return new ArrayValue(Type.LONG_TYPE, value1, value2).with(insn);
         case FALOAD:
-            return new ArrayValue(Type.FLOAT_TYPE, value1, value2);
+            return new ArrayValue(Type.FLOAT_TYPE, value1, value2).with(insn);
         case DALOAD:
-            return new ArrayValue(Type.DOUBLE_TYPE, value1, value2);
+            return new ArrayValue(Type.DOUBLE_TYPE, value1, value2).with(insn);
         case AALOAD:
-            return new ArrayValue(Type.getObjectType("java/lang/Object"), value1, value2);
+            return new ArrayValue(Type.getObjectType("java/lang/Object"), value1, value2).with(insn);
         case BALOAD:
-            return new ArrayValue(Type.BYTE_TYPE, value1, value2);
+            return new ArrayValue(Type.BYTE_TYPE, value1, value2).with(insn);
         case CALOAD:
-            return new ArrayValue(Type.CHAR_TYPE, value1, value2);
+            return new ArrayValue(Type.CHAR_TYPE, value1, value2).with(insn);
         case SALOAD:
-            return new ArrayValue(Type.SHORT_TYPE, value1, value2);
+            return new ArrayValue(Type.SHORT_TYPE, value1, value2).with(insn);
         case IADD:
         case ISUB:
         case IMUL:
@@ -321,7 +322,7 @@ public class DefUseInterpreter extends Interpreter<Value> implements Opcodes {
         case FCMPG:
         case DCMPL:
         case DCMPG:
-            return new Merge(Type.INT_TYPE, value1, value2);
+            return new Merge(Type.INT_TYPE, value1, value2).with(insn);
         case LADD:
         case LSUB:
         case LMUL:
@@ -333,19 +334,19 @@ public class DefUseInterpreter extends Interpreter<Value> implements Opcodes {
         case LAND:
         case LOR:
         case LXOR:
-            return new Merge(Type.LONG_TYPE, value1, value2);
+            return new Merge(Type.LONG_TYPE, value1, value2).with(insn);
         case FADD:
         case FSUB:
         case FMUL:
         case FDIV:
         case FREM:
-            return new Merge(Type.FLOAT_TYPE, value1, value2);
+            return new Merge(Type.FLOAT_TYPE, value1, value2).with(insn);
         case DADD:
         case DSUB:
         case DMUL:
         case DDIV:
         case DREM:
-            return new Merge(Type.DOUBLE_TYPE, value1, value2);
+            return new Merge(Type.DOUBLE_TYPE, value1, value2).with(insn);
         case IF_ICMPEQ:
         case IF_ICMPNE:
         case IF_ICMPLT:
@@ -364,6 +365,7 @@ public class DefUseInterpreter extends Interpreter<Value> implements Opcodes {
     @Override
     public Value ternaryOperation(final AbstractInsnNode insn, final Value value1,
             final Value value2, final Value value3) {
+        assert false : "Ternary unsupported?";
         return null;
     }
 
@@ -375,15 +377,15 @@ public class DefUseInterpreter extends Interpreter<Value> implements Opcodes {
         case INVOKESTATIC:
         case INVOKEINTERFACE: {
             final MethodInsnNode invoke = (MethodInsnNode) insn;
-            return new Invoke(Type.getReturnType(invoke.desc), values);
+            return new Invoke(Type.getReturnType(invoke.desc), values).with(insn);
         }
         case INVOKEDYNAMIC: {
             final InvokeDynamicInsnNode invoke = (InvokeDynamicInsnNode) insn;
-            return new Invoke(Type.getReturnType(invoke.desc), values);
+            return new Invoke(Type.getReturnType(invoke.desc), values).with(insn);
         }
         case MULTIANEWARRAY: {
             final MultiANewArrayInsnNode arr = (MultiANewArrayInsnNode) insn;
-            return new ArrayRef(Type.getType(arr.desc), values);
+            return new ArrayRef(Type.getType(arr.desc), values).with(insn);
         }
         default:
             throw new IllegalArgumentException("Invalid instruction opcode.");

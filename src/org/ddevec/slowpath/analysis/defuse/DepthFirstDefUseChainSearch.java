@@ -38,14 +38,14 @@ public class DepthFirstDefUseChainSearch implements DefUseChainSearch {
 
     private DefUseFrame[] frames;
 
-    private Variable[] variables;
+    private Value[] variables;
 
     private int[][] successors;
 
     private int n;
 
     @Override
-    public DefUseChain[] search(final DefUseFrame[] frames, final Variable[] variables,
+    public DefUseChain[] search(final DefUseFrame[] frames, final Value[] variables,
             final int[][] adjacencyListSucc, final int[][] adjacencyListPred) {
 
         this.frames = frames;
@@ -55,7 +55,7 @@ public class DepthFirstDefUseChainSearch implements DefUseChainSearch {
 
         final List<DefUseChain> list = new ArrayList<DefUseChain>();
         for (int i = 0; i < n; i++) {
-            for (final Variable def : frames[i].getDefinitions()) {
+            for (final Value def : frames[i].getDefinitions()) {
                 DFS(def, i, list);
             }
         }
@@ -66,7 +66,7 @@ public class DepthFirstDefUseChainSearch implements DefUseChainSearch {
      * The search visits every instruction j which is syntactically reachable
      * from i by some definition-clear path.
      */
-    private void DFS(final Variable def, final int i, final List<DefUseChain> list) {
+    private void DFS(final Value def, final int i, final List<DefUseChain> list) {
         final boolean[] queued = new boolean[n];
         final int[] queue = new int[n];
         int top = 0;

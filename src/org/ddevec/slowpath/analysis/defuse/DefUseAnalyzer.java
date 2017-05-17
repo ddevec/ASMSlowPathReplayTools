@@ -50,7 +50,7 @@ public class DefUseAnalyzer implements Opcodes {
 
     private DefUseFrame[] duframes;
 
-    private Variable[] variables;
+    private Value[] variables;
 
     public DefUseAnalyzer() {
         this(new DefUseInterpreter());
@@ -72,7 +72,7 @@ public class DefUseAnalyzer implements Opcodes {
         duframes = new DefUseFrame[n];
 
         final Frame<Value>[] frames = analyzer.analyze(owner, m);
-        final Set<Variable> vars = new LinkedHashSet<Variable>();
+        final Set<Value> vars = new LinkedHashSet<Value>();
 
         final Type[] args = Type.getArgumentTypes(m.desc);
         int local = 0;
@@ -114,14 +114,14 @@ public class DefUseAnalyzer implements Opcodes {
                 reachDefs(m.instructions, i);
             }
         }
-        variables = vars.toArray(new Variable[vars.size()]);
+        variables = vars.toArray(new Value[vars.size()]);
 
         if (frames.length == 0) {
             return duframes;
         }
 
         for (int i = 0; i < variables.length; i++) {
-            final Variable def = variables[i];
+            final Value def = variables[i];
             if (i < nargs || def instanceof StaticField) {
                 duframes[0].addDef(def);
             } else if (def instanceof ObjectField) {
@@ -136,6 +136,7 @@ public class DefUseAnalyzer implements Opcodes {
     }
 
     private void reachDefs(final InsnList instructions, final int i) {
+        /*
         for (final Variable var : duframes[i].getUses()) {
             if (var instanceof ObjectField) {
                 final Value root = ((ObjectField) var).getRoot();
@@ -148,13 +149,14 @@ public class DefUseAnalyzer implements Opcodes {
                 }
             }
         }
+        */
     }
 
     public DefUseFrame[] getDefUseFrames() {
         return duframes;
     }
 
-    public Variable[] getVariables() {
+    public Value[] getVariables() {
         return variables;
     }
 

@@ -133,7 +133,7 @@ public class ClassInstrumentor {
     Iterable<String> classes = classes = calcClosure(baseClasses);
 
     for (String classname : classes) {
-      if (shouldInstrument(classname)) {
+      if (InstrumentationFilter.shouldInstrument(classname)) {
         Instrumentor inst = new Instrumentor(outdir.getPath()) {
             @Override
             public ClassVisitor getClassVisitor(ClassVisitor cv) {
@@ -165,37 +165,6 @@ public class ClassInstrumentor {
     }
 
     return ret;
-  }
-
-  private static boolean shouldInstrument(String classname) {
-    /*
-    if (classname.startsWith("java/lang")) {
-      return false;
-    }
-    if (classname.startsWith("java/security")) {
-      return false;
-    }
-    if (classname.startsWith("java/io")) {
-      return false;
-    }
-    */
-    if (classname.startsWith("java")) {
-      return false;
-    }
-    if (classname.startsWith("javax")) {
-      return false;
-    }
-    if (classname.startsWith("sun")) {
-      return false;
-    }
-    if (classname.startsWith("jdk")) {
-      return false;
-    }
-    if (classname.startsWith("org/ddevec/slowpath/runtime")) {
-      return false;
-    }
-
-    return true;
   }
 
 
