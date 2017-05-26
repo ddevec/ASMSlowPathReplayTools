@@ -3,10 +3,10 @@ package org.ddevec.slowpath.analysis;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import rr.org.objectweb.asm.ClassVisitor;
+import rr.org.objectweb.asm.Handle;
+import rr.org.objectweb.asm.MethodVisitor;
+import rr.org.objectweb.asm.Opcodes;
 
 public class ReachingClassAnalysis extends ClassVisitor {
   Set<String> classes;

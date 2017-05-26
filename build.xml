@@ -39,7 +39,9 @@
     -->
 
     <path id="build-classpath">
+        <!--
         <pathelement path="${asm-debug-jar}"/>
+        -->
         <pathelement path="${args4j-jar}"/>
         <pathelement path="${jgrapht-jar}"/>
         <pathelement path="${rr-classes}"/>
@@ -52,7 +54,9 @@
 
     <path id="run-classpath">
         <pathelement path="${out-jar}"/>
+        <!--
         <pathelement path="${asm-debug-jar}"/>
+        -->
         <pathelement path="${args4j-jar}"/>
         <pathelement path="${jgrapht-jar}"/>
         <pathelement path="${rrloader-jar}"/>
@@ -161,8 +165,385 @@
             </classpath>
 
             <arg value="--outdir"/>
-            <arg value="test_out/RRInst"/>
+            <arg value="test_out/RRSimpleRace"/>
+            <!--
+            <arg value="org.ddevec.slowpath.test.SimpleRace"/>
+            -->
             <arg value="org.dacapo.harness.ChordHarness"/>
+        </java>
+    </target>
+
+    <target name="rrtest1" depends="jar">
+        <java fork="true" classname="${rr-class}">
+            <classpath>
+                <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+            </classpath>
+
+            <arg value="--outdir"/>
+            <arg value="test_out/rtest1"/>
+            <arg value="org.ddevec.slowpath.test.SimpleRace"/>
+            <!--
+            <arg value="org.dacapo.harness.ChordHarness"/>
+            -->
+        </java>
+    </target>
+
+    <target name="rrruntest1" depends="rrtest1">
+        <java fork="true" classname="org.ddevec.slowpath.runtime.RRStarter" dir="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch">
+
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+
+            <classpath>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/test_out/rrtest1"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/build/jar/SlowPath.jar"/>
+                <path refid="run-classpath"/>
+            </classpath>
+
+            <arg value="/home/ddevec/OptFT/SlowPath/test_out/rrtest1/rr.meta"/>
+            <arg value="org.ddevec.slowpath.test.SimpleRace"/>
+        </java>
+    </target>
+
+    <target name="rrtest2" depends="jar">
+        <java fork="true" classname="${rr-class}">
+            <classpath>
+                <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+            </classpath>
+
+            <arg value="--outdir"/>
+            <arg value="test_out/rrtest2"/>
+            <arg value="org.ddevec.slowpath.test.SimpleForkJoin"/>
+            <!--
+            <arg value="org.dacapo.harness.ChordHarness"/>
+            -->
+        </java>
+    </target>
+
+    <target name="rrruntest2" depends="rrtest2">
+        <java fork="true" classname="org.ddevec.slowpath.runtime.RRStarter">
+
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+
+            <classpath>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/test_out/rrtest2"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/build/jar/SlowPath.jar"/>
+                <path refid="run-classpath"/>
+            </classpath>
+
+            <arg value="/home/ddevec/OptFT/SlowPath/test_out/rrtest2/rr.meta"/>
+            <arg value="org.ddevec.slowpath.test.SimpleForkJoin"/>
+        </java>
+    </target>
+
+    <target name="rrtest3" depends="jar">
+        <java fork="true" classname="${rr-class}">
+            <classpath>
+                <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+            </classpath>
+
+            <arg value="--outdir"/>
+            <arg value="test_out/rrtest3"/>
+            <arg value="org.ddevec.slowpath.test.SimpleMutex"/>
+            <!--
+            <arg value="org.dacapo.harness.ChordHarness"/>
+            -->
+        </java>
+    </target>
+
+    <target name="rrruntest3" depends="rrtest3">
+        <java fork="true" classname="org.ddevec.slowpath.runtime.RRStarter">
+
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+
+            <classpath>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/test_out/rrtest3"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/build/jar/SlowPath.jar"/>
+                <path refid="run-classpath"/>
+            </classpath>
+
+            <arg value="/home/ddevec/OptFT/SlowPath/test_out/rrtest3/rr.meta"/>
+            <arg value="org.ddevec.slowpath.test.SimpleMutex"/>
+        </java>
+    </target>
+
+    <target name="rrtest4" depends="jar">
+        <java fork="true" classname="${rr-class}">
+            <classpath>
+                <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+            </classpath>
+
+            <arg value="--outdir"/>
+            <arg value="test_out/rrtest4"/>
+            <arg value="org.ddevec.slowpath.test.SimpleMutexRace"/>
+            <!--
+            <arg value="org.dacapo.harness.ChordHarness"/>
+            -->
+        </java>
+    </target>
+
+    <target name="rrruntest4" depends="rrtest4">
+        <java fork="true" classname="org.ddevec.slowpath.runtime.RRStarter">
+
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+
+            <classpath>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/test_out/rrtest4"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/build/jar/SlowPath.jar"/>
+                <path refid="run-classpath"/>
+            </classpath>
+
+            <arg value="/home/ddevec/OptFT/SlowPath/test_out/rrtest4/rr.meta"/>
+            <arg value="org.ddevec.slowpath.test.SimpleMutexRace"/>
+        </java>
+    </target>
+
+    <target name="rrtest5" depends="jar">
+        <java fork="true" classname="${rr-class}">
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+            <classpath>
+                <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+            </classpath>
+
+            <arg value="--outdir"/>
+            <arg value="test_out/rrtest5"/>
+            <arg value="org.ddevec.slowpath.test.SimpleBarrier"/>
+            <!--
+            <arg value="org.dacapo.harness.ChordHarness"/>
+            -->
+        </java>
+    </target>
+
+    <target name="rrruntest5" depends="rrtest5">
+        <java fork="true" classname="org.ddevec.slowpath.runtime.RRStarter">
+
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+
+            <classpath>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/test_out/rrtest5"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/build/jar/SlowPath.jar"/>
+                <path refid="run-classpath"/>
+            </classpath>
+
+            <arg value="/home/ddevec/OptFT/SlowPath/test_out/rrtest5/rr.meta"/>
+            <arg value="org.ddevec.slowpath.test.SimpleBarrier"/>
+        </java>
+    </target>
+
+    <target name="rrtest6" depends="jar">
+        <java fork="true" classname="${rr-class}">
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+            <classpath>
+                <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+            </classpath>
+
+            <arg value="--outdir"/>
+            <arg value="test_out/rrtest6"/>
+            <arg value="org.ddevec.slowpath.test.SimpleBarrierRace"/>
+            <!--
+            <arg value="org.dacapo.harness.ChordHarness"/>
+            -->
+        </java>
+    </target>
+
+    <target name="rrruntest6" depends="rrtest6">
+        <java fork="true" classname="org.ddevec.slowpath.runtime.RRStarter">
+
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+
+            <classpath>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/test_out/rrtest6"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/build/jar/SlowPath.jar"/>
+                <path refid="run-classpath"/>
+            </classpath>
+
+            <arg value="/home/ddevec/OptFT/SlowPath/test_out/rrtest6/rr.meta"/>
+            <arg value="org.ddevec.slowpath.test.SimpleBarrierRace"/>
+        </java>
+    </target>
+
+    <target name="rrtest7" depends="jar">
+        <java fork="true" classname="${rr-class}">
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+            <classpath>
+                <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+            </classpath>
+
+            <arg value="--outdir"/>
+            <arg value="test_out/rrtest7"/>
+            <arg value="org.ddevec.slowpath.test.SimpleSignalWait"/>
+            <!--
+            <arg value="org.dacapo.harness.ChordHarness"/>
+            -->
+        </java>
+    </target>
+
+    <target name="rrruntest7" depends="rrtest7">
+        <java fork="true" classname="org.ddevec.slowpath.runtime.RRStarter">
+
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+
+            <classpath>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/test_out/rrtest7"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/build/jar/SlowPath.jar"/>
+                <path refid="run-classpath"/>
+            </classpath>
+
+            <arg value="/home/ddevec/OptFT/SlowPath/test_out/rrtest7/rr.meta"/>
+            <arg value="org.ddevec.slowpath.test.SimpleSignalWait"/>
+        </java>
+    </target>
+
+    <target name="runrr" depends="jar">
+        <java fork="true" classname="org.ddevec.slowpath.runtime.RRStarter" dir="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch">
+
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+
+            <classpath>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/test_out/RRSimpleRace"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/test_out/RRSimpleRace"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+                <pathelement location="/home/ddevec/OptFT/SlowPath/build/jar/SlowPath.jar"/>
+                <path refid="run-classpath"/>
+            </classpath>
+            <!--
+            <arg value="org.ddevec.slowpath.test.SimpleRace"/>
+            -->
+            <arg value="-help"/>
+            <arg value="/home/ddevec/OptFT/SlowPath/test_out/RRSimpleRace/rr.meta"/>
+            <arg value="org.dacapo.harness.ChordHarness"/>
+            <arg value="lusearch"/>
+            <arg value="-s"/>
+            <arg value="default"/>
         </java>
     </target>
 

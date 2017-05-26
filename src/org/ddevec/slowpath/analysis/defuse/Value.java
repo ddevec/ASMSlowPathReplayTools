@@ -32,10 +32,10 @@ package org.ddevec.slowpath.analysis.defuse;
 import java.util.Collections;
 import java.util.Set;
 
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
+import rr.org.objectweb.asm.Type;
+import rr.org.objectweb.asm.tree.AbstractInsnNode;
 
-public class Value implements org.objectweb.asm.tree.analysis.Value {
+public class Value implements rr.org.objectweb.asm.tree.analysis.Value {
 
     public static final Value UNINITIALIZED_VALUE = new Value();
     public static final Value INT_VALUE = new Value(Type.INT_TYPE);

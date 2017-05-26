@@ -33,14 +33,14 @@ package org.ddevec.slowpath.analysis.defuse;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.analysis.Analyzer;
-import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.Frame;
+import rr.org.objectweb.asm.Opcodes;
+import rr.org.objectweb.asm.Type;
+import rr.org.objectweb.asm.tree.AbstractInsnNode;
+import rr.org.objectweb.asm.tree.InsnList;
+import rr.org.objectweb.asm.tree.MethodNode;
+import rr.org.objectweb.asm.tree.analysis.Analyzer;
+import rr.org.objectweb.asm.tree.analysis.AnalyzerException;
+import rr.org.objectweb.asm.tree.analysis.Frame;
 
 public class DefUseAnalyzer implements Opcodes {
 

@@ -13,6 +13,7 @@ import org.ddevec.slowpath.analysis.ReachingClassAnalysis;
 import org.ddevec.slowpath.instr.Instrumentor;
 import org.ddevec.slowpath.instr.Analysis;
 import org.ddevec.slowpath.instr.JVMVersionNumberFixer;
+import org.ddevec.slowpath.utils.InstrumentationFilter;
 
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
@@ -22,8 +23,8 @@ import org.kohsuke.args4j.ParserProperties;
 import org.kohsuke.args4j.spi.Messages;
 
 /* FIXME: Needed? */
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
+import rr.org.objectweb.asm.ClassVisitor;
+import rr.org.objectweb.asm.Opcodes;
 
 public class ClassInstrumentor {
 

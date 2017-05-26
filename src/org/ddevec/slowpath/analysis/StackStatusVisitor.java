@@ -1,8 +1,8 @@
 package org.ddevec.slowpath.analysis;
 
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import rr.org.objectweb.asm.ClassVisitor;
+import rr.org.objectweb.asm.MethodVisitor;
+import rr.org.objectweb.asm.Opcodes;
 
 import java.util.ArrayList;
 

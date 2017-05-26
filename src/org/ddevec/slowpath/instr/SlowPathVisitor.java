@@ -3,11 +3,11 @@ package org.ddevec.slowpath.instr;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.util.CheckMethodAdapter;
-import org.objectweb.asm.commons.JSRInlinerAdapter;
+import rr.org.objectweb.asm.ClassVisitor;
+import rr.org.objectweb.asm.MethodVisitor;
+import rr.org.objectweb.asm.Opcodes;
+import rr.org.objectweb.asm.util.CheckMethodAdapter;
+import rr.org.objectweb.asm.commons.JSRInlinerAdapter;
 
 public class SlowPathVisitor extends ClassVisitor implements Opcodes {
   int version;
@@ -93,7 +93,8 @@ public class SlowPathVisitor extends ClassVisitor implements Opcodes {
       return null;
     }
 
-    mv = new CheckMethodAdapter(mv, version);
+    //mv = new CheckMethodAdapter(mv, version);
+    mv = new CheckMethodAdapter(mv);
     // FIXME: SCREW INITIALIZERS -- for now
     if (name.equals("<init>") || name.equals("<clinit>")) {
       mv = new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);

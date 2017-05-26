@@ -13,15 +13,15 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.util.Printer;
-import org.objectweb.asm.util.Textifier;
-import org.objectweb.asm.util.TraceMethodVisitor;
-import org.objectweb.asm.util.CheckMethodAdapter;
+import rr.org.objectweb.asm.ClassReader;
+import rr.org.objectweb.asm.ClassWriter;
+import rr.org.objectweb.asm.ClassVisitor;
+import rr.org.objectweb.asm.MethodVisitor;
+import rr.org.objectweb.asm.Opcodes;
+import rr.org.objectweb.asm.util.Printer;
+import rr.org.objectweb.asm.util.Textifier;
+import rr.org.objectweb.asm.util.TraceMethodVisitor;
+import rr.org.objectweb.asm.util.CheckMethodAdapter;
 
 import org.ddevec.slowpath.instr.Instrumentor;
 import org.ddevec.slowpath.instr.CloneMethodVisitor;

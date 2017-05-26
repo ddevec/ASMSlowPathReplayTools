@@ -1,7 +1,7 @@
 package org.ddevec.slowpath.test;
 
 import java.util.*;
-import org.objectweb.asm.*;
+import rr.org.objectweb.asm.*;
 public class TestArrayDump implements Opcodes {
 
 public static byte[] dump () throws Exception {

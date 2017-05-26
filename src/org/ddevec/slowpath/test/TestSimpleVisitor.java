@@ -3,11 +3,11 @@ package org.ddevec.slowpath.test;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.commons.JSRInlinerAdapter;
-import org.objectweb.asm.util.CheckMethodAdapter;
+import rr.org.objectweb.asm.ClassVisitor;
+import rr.org.objectweb.asm.MethodVisitor;
+import rr.org.objectweb.asm.Opcodes;
+import rr.org.objectweb.asm.commons.JSRInlinerAdapter;
+import rr.org.objectweb.asm.util.CheckMethodAdapter;
 
 import org.ddevec.slowpath.instr.CloneMethodVisitor;
 import org.ddevec.slowpath.instr.MethodDuplicator;

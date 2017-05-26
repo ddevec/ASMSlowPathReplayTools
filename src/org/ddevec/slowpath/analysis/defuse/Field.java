@@ -29,7 +29,7 @@
  */
 package org.ddevec.slowpath.analysis.defuse;
 
-import org.objectweb.asm.Type;
+import rr.org.objectweb.asm.Type;
 
 public class Field extends Variable {
 

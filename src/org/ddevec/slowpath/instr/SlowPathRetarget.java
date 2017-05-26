@@ -1,13 +1,13 @@
 package org.ddevec.slowpath.instr;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.TypePath;
+import rr.org.objectweb.asm.AnnotationVisitor;
+import rr.org.objectweb.asm.ClassVisitor;
+import rr.org.objectweb.asm.MethodVisitor;
+import rr.org.objectweb.asm.Handle;
+import rr.org.objectweb.asm.Label;
+import rr.org.objectweb.asm.Opcodes;
+import rr.org.objectweb.asm.Type;
+import rr.org.objectweb.asm.TypePath;
 
 /**
  * Pass that retargets all function calls to their slow-path prefixed variants.

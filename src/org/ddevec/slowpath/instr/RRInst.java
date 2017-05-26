@@ -6,13 +6,10 @@
 
 package org.ddevec.slowpath.instr;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
-
-import org.ddevec.slowpath.instr.rr.NativeMethodSanityChecker;
-import org.ddevec.slowpath.instr.rr.GuardStateInserter;
+import rr.org.objectweb.asm.ClassReader;
+import rr.org.objectweb.asm.ClassVisitor;
+import rr.org.objectweb.asm.ClassWriter;
+import rr.org.objectweb.asm.Opcodes;
 
 import rr.instrument.classes.AbstractOrphanFixer;
 import rr.instrument.classes.ArrayAllocSiteTracker;
@@ -37,19 +34,24 @@ public class RRInst {
         ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES |
                 ClassWriter.COMPUTE_MAXS);
 
-        String classname = cr.getClassName();
-        ClassInfo currentClass = MetaDataInfoMaps.getClass(classname);
+        ClassVisitor cv = cw;
 
-        //ClassVisitor cv1 = new NativeMethodSanityChecker(cw);
-        cv1 = new GuardStateInserter(cv1);
-        cv1 = new InterruptFixer(cv1);
-        cv1 = new CloneFixer(cv1);
-        //cv1 = new ClassInitNotifier(currentClass, loader, cv1);
-        cv1 = new ArrayAllocSiteTracker(currentClass, cv1);
-        cv1 = new AbstractOrphanFixer(cv1);
-        ClassVisitor cv2 = new ThreadDataThunkInserter(cv1, true);
-        ClassVisitor cv2forThunks = new ThreadDataThunkInserter(cv1, false);
-        ClassVisitor cv = new SyncAndMethodThunkInserter(cv2, cv2forThunks);
+        // If the class is abstract...
+        if ((cr.getAccess() & Opcodes.ACC_INTERFACE) == 0) {
+            String classname = cr.getClassName();
+            ClassInfo currentClass = MetaDataInfoMaps.getClass(classname);
+
+            ClassVisitor cv1 = new NativeMethodSanityChecker(cw);
+            cv1 = new GuardStateInserter(cv1);
+            cv1 = new InterruptFixer(cv1);
+            cv1 = new CloneFixer(cv1);
+            //cv1 = new ClassInitNotifier(currentClass, loader, cv1);
+            cv1 = new ArrayAllocSiteTracker(currentClass, cv1);
+            cv1 = new AbstractOrphanFixer(cv1);
+            ClassVisitor cv2 = new ThreadDataThunkInserter(cv1, true);
+            ClassVisitor cv2forThunks = new ThreadDataThunkInserter(cv1, false);
+            cv = new SyncAndMethodThunkInserter(cv2, cv2forThunks);
+        }
 
         // FIXME: Tool specific visitors :(
         //cv = insertToolSpecificVisitors(cv);

@@ -37,12 +37,12 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.analysis.Analyzer;
-import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.Frame;
-import org.objectweb.asm.tree.analysis.Interpreter;
-import org.objectweb.asm.tree.analysis.Value;
+import rr.org.objectweb.asm.tree.MethodNode;
+import rr.org.objectweb.asm.tree.analysis.Analyzer;
+import rr.org.objectweb.asm.tree.analysis.AnalyzerException;
+import rr.org.objectweb.asm.tree.analysis.Frame;
+import rr.org.objectweb.asm.tree.analysis.Interpreter;
+import rr.org.objectweb.asm.tree.analysis.Value;
 
 public class BasicBlockAnalyzer<V extends Value> extends Analyzer<V> {
 

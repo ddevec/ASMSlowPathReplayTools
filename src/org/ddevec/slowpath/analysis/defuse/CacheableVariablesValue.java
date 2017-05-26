@@ -31,8 +31,8 @@ package org.ddevec.slowpath.analysis.defuse;
 
 import java.util.Set;
 
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
+import rr.org.objectweb.asm.Type;
+import rr.org.objectweb.asm.tree.AbstractInsnNode;
 
 public abstract class CacheableVariablesValue extends Value {
 

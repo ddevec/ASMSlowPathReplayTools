@@ -33,8 +33,8 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
+import rr.org.objectweb.asm.Type;
+import rr.org.objectweb.asm.tree.AbstractInsnNode;
 
 public class Merge extends CacheableVariablesValue {
 

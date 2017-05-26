@@ -32,7 +32,7 @@ package org.ddevec.slowpath.analysis.defuse;
 import java.util.Collections;
 import java.util.Set;
 
-import org.objectweb.asm.Type;
+import rr.org.objectweb.asm.Type;
 
 public abstract class Variable extends Value {
 

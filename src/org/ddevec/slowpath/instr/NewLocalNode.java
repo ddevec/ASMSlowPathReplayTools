@@ -2,17 +2,17 @@ package org.ddevec.slowpath.instr;
 
 import org.ddevec.utils.ArrayUtils;
 
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.TypePath;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.InsnList;
+import rr.org.objectweb.asm.MethodVisitor;
+import rr.org.objectweb.asm.Handle;
+import rr.org.objectweb.asm.Label;
+import rr.org.objectweb.asm.Opcodes;
+import rr.org.objectweb.asm.Type;
+import rr.org.objectweb.asm.TypePath;
+import rr.org.objectweb.asm.tree.AbstractInsnNode;
+import rr.org.objectweb.asm.tree.LabelNode;
+import rr.org.objectweb.asm.tree.InsnList;
 
-import org.objectweb.asm.commons.LocalVariablesSorter;
+import rr.org.objectweb.asm.commons.LocalVariablesSorter;
 
 import java.util.Map;
 

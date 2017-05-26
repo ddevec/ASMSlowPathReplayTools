@@ -7,7 +7,7 @@
 package org.ddevec.slowpath.utils;
 
 public class InstrumentationFilter {
-  private static boolean shouldInstrument(String classname) {
+  public static boolean shouldInstrument(String classname) {
     /*
     if (classname.startsWith("java/lang")) {
       return false;

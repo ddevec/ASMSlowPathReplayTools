@@ -9,11 +9,11 @@ import java.io.OutputStream;
 import java.io.FileOutputStream;
 import java.net.URL;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import rr.org.objectweb.asm.ClassReader;
+import rr.org.objectweb.asm.ClassWriter;
+import rr.org.objectweb.asm.ClassVisitor;
+import rr.org.objectweb.asm.MethodVisitor;
+import rr.org.objectweb.asm.Opcodes;
 
 public abstract class Analysis {
   public Analysis() { }

@@ -12,16 +12,28 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.lang.instrument.IllegalClassFormatException;
 
 import rr.org.objectweb.asm.ClassWriter;
+import rr.org.objectweb.asm.ClassVisitor;
+import rr.org.objectweb.asm.MethodVisitor;
 import rr.org.objectweb.asm.ClassReader;
 import rr.org.objectweb.asm.Opcodes;
+import rr.org.objectweb.asm.Type;
 
 import rr.loader.LoaderContext;
 import rr.loader.MetaDataBuilder;
+import rr.meta.ClassInfo;
+import rr.meta.MetaDataInfoMaps;
+import rr.instrument.ClassContext;
+import rr.instrument.Instrumentor;
+import rr.state.agent.ThreadStateFieldExtension;
+import rr.state.agent.StateExtensionTransformer;
 import rr.tool.RR;
 
 import tools.fasttrack.FastTrackTool;
@@ -41,6 +53,37 @@ import org.ddevec.slowpath.instr.RRInst;
  * Does Roadrunner instrumentation --s taticaly.
  */
 public class DoRRInst {
+	private static final String FIELD_ACCESSOR_NAME_PREFIX = "ts_get";
+
+  private StateExtensionTransformer SET = new StateExtensionTransformer();
+
+	private class ToolClassVisitor extends ClassVisitor implements Opcodes {
+
+		String owner;
+		public ToolClassVisitor(ClassVisitor cv, String owner) {
+			super(ASM5, cv);
+			this.owner = owner;
+		}
+
+		@Override
+		public void visit(int version, int access, String name,
+				String signature, String superName, String[] interfaces) {
+			super.visit(version, access, name, signature, superName, interfaces);
+		}
+
+		@Override
+		public MethodVisitor visitMethod(int access, String name, String desc,
+				String signature, String[] exceptions) {
+			if (name.startsWith(FIELD_ACCESSOR_NAME_PREFIX)) {
+        System.err.println("Add extension");
+				ThreadStateFieldExtension f = new ThreadStateFieldExtension(owner, "rr/state/ShadowThread", name.substring(7), Type.getReturnType(desc).getDescriptor());
+				SET.addField(f);
+			}
+			return super.visitMethod(access, name, desc, signature, exceptions);
+		}
+
+	}
+
   private class CmdOptions {
     private boolean optionsValid = false;
 
@@ -51,6 +94,11 @@ public class DoRRInst {
             usage="Output directory for instrumented class files",
             metaVar="<outdir>")
     private File outdir = new File("./test_out/DoRRInst");
+
+    @Option(name="--tool",
+            usage="Tool class for instrumentation",
+            metaVar="<tool>")
+    private String tool = "tools/fasttrack/FastTrackTool";
 
     public CmdOptions(String[] args) {
       ParserProperties prop = ParserProperties.defaults();
@@ -85,6 +133,10 @@ public class DoRRInst {
     public File outdir() {
       return outdir;
     }
+    
+    public String tool() {
+      return tool;
+    }
   }
 
   private static void handleError(Exception ex) {
@@ -97,6 +149,9 @@ public class DoRRInst {
     DoRRInst inst = new DoRRInst(args);
 
     inst.go();
+
+    // RR is funky -- force it to stop
+    System.exit(0);
   }
 
   private String[] args;
@@ -114,6 +169,7 @@ public class DoRRInst {
     }
 
     List<String> baseClasses = opts.classes();
+    String toolClass = opts.tool();
 
     baseClasses = cleanNames(baseClasses);
     File outdir = opts.outdir();
@@ -123,17 +179,34 @@ public class DoRRInst {
 
     LoaderContext loader = new LoaderContext(getClass().getClassLoader());
 
-    FastTrackTool tool = new FastTrackTool("FastTrack", null, null);
+    // Run RR Pre-loadng on all of the classes...
+    for (String cname : classes) {
+      try {
+        URL resource = getClassFile(cname);
+        InputStream is = resource.openStream();
+
+        ClassReader cr = new ClassReader(is);
+
+        // UGH -- mark class as preloaded b/c -- RR nonsense
+        MetaDataBuilder.preLoadFully(loader, cr);
+
+        InitFileHandles(cr.getClassName());
+
+        is.close();
+
+      } catch (IOException ex) {
+        handleError(ex);
+      }
+    }
+
     //RR.toolOption.checkAndApply("tools/fasttrack/FastTrackTool");
+    RR.createDefaultToolIfNecessary();
+    FastTrackTool tool = new FastTrackTool("FastTrack", RR.getTool(), null);
     RR.setTool(tool);
 
     // Finally, foreach class instrument
     for (String classname : classes) {
       if (shouldInstrument(classname)) {
-        // FIXME: do this --
-        // Make reader for this class 
-        // writer = RRInst.doVisit(reader)
-        // Write bytes from writer to output location...
         System.err.println("Instrumenting: " + classname);
         URL resource = getClassFile(classname);
 
@@ -148,9 +221,6 @@ public class DoRRInst {
           is = resource.openStream();
 
           ClassReader cr = new ClassReader(is);
-
-          // UGH -- mark class as preloaded b/c -- RR nonsense
-          MetaDataBuilder.preLoad(loader, cr);
 
           ClassWriter cw = RRInst.doVisit(cr);
           is.close();
@@ -172,6 +242,85 @@ public class DoRRInst {
         }
       }
     }
+
+    List<String> toolInstrClasses = new ArrayList<String>();
+    toolInstrClasses.add(toolClass);
+    toolInstrClasses.add("rr/state/ShadowThread");
+    // Must also instrument fasttrack tools with ThreadStateFieldExtension
+    // Pretty sure that's just FastTrackTool
+    for (String toolClassName : toolInstrClasses) {
+      System.err.println("Instrumenting tool: " + toolClassName);
+      URL toolResource = getClassFile(toolClassName);
+      SET.addToolClassToWatchList(toolClassName);
+
+      if (toolResource == null) {
+        System.err.println("WARNING: Couldn't find Resource: " +
+            toolClassName);
+        System.exit(1);
+      }
+
+      InputStream is;
+      try {
+        is = toolResource.openStream();
+
+        ClassReader cr = new ClassReader(is);
+
+        ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES |
+            ClassWriter.COMPUTE_MAXS);
+
+        ClassVisitor cv = new ToolClassVisitor(cw, toolClassName);
+
+        cr.accept(cv, ClassReader.EXPAND_FRAMES);
+        is.close();
+
+        String oFileName = getOutputName(outdir.getPath(), toolClassName);
+        File oFile = new File(oFileName);
+
+        File parent = oFile.getParentFile();
+
+        if (!parent.exists()) {
+          parent.mkdirs();
+        }
+        OutputStream os = new FileOutputStream(oFile);
+
+        byte[] xform = cw.toByteArray();
+
+        byte[] xform2 = SET.transform(null, toolClassName, null, null, xform);
+
+        os.write(xform2);
+        os.close();
+      } catch (IOException ex) {
+        handleError(ex);
+      } catch (IllegalClassFormatException ex) {
+        handleError(ex);
+      }
+    }
+
+    // Finally, write out any classes defined by the analysis
+    HashMap<String, byte[]> defineMap = LoaderContext.getDefineMap();
+
+    for (Map.Entry<String, byte[]> entry : defineMap.entrySet()) {
+      String classname = entry.getKey();
+      byte[] data = entry.getValue();
+      try {
+          String oFileName = getOutputName(outdir.getPath(), classname);
+          File oFile = new File(oFileName);
+
+          File parent = oFile.getParentFile();
+
+          if (!parent.exists()) {
+            parent.mkdirs();
+          }
+          OutputStream os = new FileOutputStream(oFile);
+
+          os.write(data);
+          os.close();
+      } catch (IOException ex) {
+        handleError(ex);
+      }
+    }
+
+    MetaDataInfoMaps.dump(outdir.getPath() + "/rr.meta");
   }
 
   private static boolean shouldInstrument(String classname) {
@@ -186,6 +335,15 @@ public class DoRRInst {
       return false;
     }
     */
+    if (classname.startsWith("__$rr")) {
+      return false;
+    }
+    if (classname.startsWith("rr")) {
+      return false;
+    }
+    if (classname.startsWith("acme")) {
+      return false;
+    }
     if (classname.startsWith("java")) {
       return false;
     }
@@ -215,6 +373,13 @@ public class DoRRInst {
     return ret;
   }
 
+  /**
+   * Get the closure of classes we need to visit.  This includes classes,
+   * subclasses, etc.
+   *
+   * Also invokes RR intiailization classes for those classes -- ensuring their
+   * metadata is set up for the actual instrumentor
+   */
   private static Iterable<String> calcClosure(List<String> classes) {
     Set<String> ret = new HashSet<String>();
 
@@ -233,7 +398,7 @@ public class DoRRInst {
         Set<String> nC = new HashSet<String>();
         Analysis as = new Analysis() {
           @Override
-          public org.objectweb.asm.ClassVisitor getClassVisitor() {
+          public ClassVisitor getClassVisitor() {
             return new ReachingClassAnalysis(Opcodes.ASM5, null, nC);
           }
         };
@@ -277,5 +442,18 @@ public class DoRRInst {
 
   public String getOutputName(String basedir, String classname) {
     return basedir + '/' + classNameToClassFile(classname);
+  }
+
+  public void InitFileHandles(String classname) {
+			// This is the "default" guess at source file name if we can't 
+			// extract it from the class file.
+			String fileName = classname;
+			ClassInfo currentClass = MetaDataInfoMaps.getClass(fileName);
+			if (fileName.contains("$")) {
+				fileName = fileName.substring(0, fileName.indexOf("$"));
+			}
+			fileName += ".java";
+			final ClassContext ctxt = Instrumentor.classContext.get(currentClass);
+			ctxt.setFileName(fileName);
   }
 }
