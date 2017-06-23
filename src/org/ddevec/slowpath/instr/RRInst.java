@@ -45,11 +45,12 @@ public class RRInst {
             cv1 = new GuardStateInserter(cv1);
             cv1 = new InterruptFixer(cv1);
             cv1 = new CloneFixer(cv1);
-            //cv1 = new ClassInitNotifier(currentClass, loader, cv1);
+            cv1 = new ClassInitNotifier(currentClass, cv1);
             cv1 = new ArrayAllocSiteTracker(currentClass, cv1);
             cv1 = new AbstractOrphanFixer(cv1);
-            ClassVisitor cv2 = new ThreadDataThunkInserter(cv1, true);
-            ClassVisitor cv2forThunks = new ThreadDataThunkInserter(cv1, false);
+            ClassVisitor cv2 = new ThreadDataThunkInserter(cv1, true, true);
+            ClassVisitor cv2forThunks = new ThreadDataThunkInserter(cv1, false,
+                    true);
             cv = new SyncAndMethodThunkInserter(cv2, cv2forThunks);
         }
 

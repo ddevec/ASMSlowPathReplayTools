@@ -76,6 +76,7 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
     // Ensure this is run exactly once
     assert(foundRet == false);
     foundRet = true;
+    System.err.println("Visit fast_end: " + fast_end);
     super.visitLabel(fast_end);
     //super.visitInsn(opcode);
     mv2.visitLabel(slow_start);
@@ -84,7 +85,10 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
       visit.run();
     }
 
-    super.visitLabel(end);
+    System.err.println("Adding end insn -- label to " + methodName);
+    mv2.visitLabel(end);
+    System.err.println("Adding end insn -- RETURN to " + methodName);
+    System.err.println("  Return Type: " + retType);
     mv2.visitInsn(retType);
   }
 
@@ -98,13 +102,17 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
     slow_start = new Label();
     end = new Label();
 
+    /*
     visitAtEnd.add(new Runnable() {
           public void run() {
             mv2.visitCode();
           }
         });
+    */
 
+    System.err.println("clonemv visitCode() on method: " + methodName);
     super.visitCode();
+    mv2.visitCode();
 
     if (methodName.equals("<init>")) {
       insAfterSpecial = true;
@@ -160,9 +168,11 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
         opcode == ARETURN) {
       // Instead add goto end
       retType = opcode;
+      System.err.println("Prepping Jump to end!");
       super.visitJumpInsn(GOTO, end);
       addRunner(new Runnable() {
             public void run() {
+              System.err.println("INTERNAL: Jump to end (" + end + ")!");
               mv2.visitJumpInsn(GOTO, end);
             }
           });
@@ -364,15 +374,30 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
     super.visitLineNumber(line, start);
   }
 
+  int maxStack = 2;
+  int maxLocals = 2;
   @Override
   public void visitMaxs(int maxStack, int maxLocals) {
-    doDuplicateMethod();
+    //doDuplicateMethod();
 
-    super.visitMaxs(maxStack, maxLocals);
+    this.maxStack = maxStack;
+    this.maxLocals = maxLocals;
+    //super.visitMaxs(maxStack, maxLocals);
+    System.err.println("At VisitMaxs");
   }
 
   @Override
   public void visitEnd() {
+    System.err.println("DoDuplciate!");
+    doDuplicateMethod();
+    System.err.println("DoneDuplciate!");
+    System.err.println("Calling end");
     super.visitEnd();
+    System.err.println("EndDone1");
+
+    // If this was my problem the whole time I'm going to kick something...
+    mv2.visitMaxs(maxStack, maxLocals);
+    mv2.visitEnd();
+    System.err.println("EndDone2");
   }
 }

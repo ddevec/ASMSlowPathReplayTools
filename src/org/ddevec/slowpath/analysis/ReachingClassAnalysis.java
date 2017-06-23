@@ -16,7 +16,7 @@ public class ReachingClassAnalysis extends ClassVisitor {
   }
 
   @Override
-  public void visit(int version, int access, String name, String signatrue,
+  public void visit(int version, int access, String name, String signature,
       String superName, String[] interfaces) {
     // Visit super
     if (superName != null) {
@@ -26,6 +26,15 @@ public class ReachingClassAnalysis extends ClassVisitor {
     for (String iface : interfaces) {
       classes.add(iface);
     }
+
+    super.visit(version, access, name, signature, superName, interfaces);
+  }
+
+  @Override
+  public void visitInnerClass(String name, String outerName, String innerName,
+      int access) {
+    classes.add(name);
+    super.visitInnerClass(name, outerName, innerName, access);
   }
 
 

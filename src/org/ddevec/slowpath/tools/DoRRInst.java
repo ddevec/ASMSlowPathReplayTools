@@ -1,5 +1,4 @@
 
-
 package org.ddevec.slowpath.tools;
 
 import java.io.File;
@@ -12,6 +11,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,18 +36,33 @@ import rr.state.agent.ThreadStateFieldExtension;
 import rr.state.agent.StateExtensionTransformer;
 import rr.tool.RR;
 
-import tools.fasttrack.FastTrackTool;
+import rr.instrument.classes.ArrayAllocSiteTracker;
+import rr.instrument.classes.CloneFixer;
+import rr.instrument.classes.ThreadDataThunkInserter;
+import rr.loader.InstrumentingDefineClassLoader;
+import rr.meta.InstrumentationFilter;
+import rr.replay.RRReplay;
+import rr.state.AbstractArrayStateCache;
+import rr.state.ArrayStateFactory;
+import rr.state.ShadowThread;
+import rr.state.agent.ThreadStateExtensionAgent;
+import rr.state.agent.ThreadStateExtensionAgent.InstrumentationMode;
+import rr.state.update.Updaters;
+import rr.tool.Tool;
+import rr.tool.ToolVisitor;
 
-import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.CmdLineException;
-import org.kohsuke.args4j.CmdLineParser;
-import org.kohsuke.args4j.Option;
-import org.kohsuke.args4j.ParserProperties;
-import org.kohsuke.args4j.spi.Messages;
+import tools.fasttrack.FastTrackTool;
 
 import org.ddevec.slowpath.analysis.ReachingClassAnalysis;
 import org.ddevec.slowpath.instr.Analysis;
 import org.ddevec.slowpath.instr.RRInst;
+import org.ddevec.slowpath.instr.RRSlowpathInst;
+
+import org.ddevec.record.instr.NativeMethodFinder;
+
+import acme.util.Util;
+import acme.util.option.CommandLine;
+import acme.util.option.CommandLineOption;
 
 /**
  * Does Roadrunner instrumentation --s taticaly.
@@ -57,86 +72,171 @@ public class DoRRInst {
 
   private StateExtensionTransformer SET = new StateExtensionTransformer();
 
+  private List<String> classes = new ArrayList<String>();
+
+  public static final CommandLineOption<String> clOutdir =
+    CommandLine.makeString("outdir", "./test_out/DoRRInst",
+        CommandLineOption.Kind.STABLE,
+        "Output directroy for instrumented class files");
+
+  public static final CommandLineOption<String> clTool =
+    CommandLine.makeString("tool", "tools/fasttrack/FastTrackTool",
+        CommandLineOption.Kind.STABLE,
+        "Tool to be instrumented");
+
+  private static CommandLineOption<Boolean> clNoInst = CommandLine.makeBoolean("noinst", false,
+      CommandLineOption.Kind.STABLE, "Does no instrumentation, just passes " +
+      "the bc files through");
+
+  private static CommandLineOption<Boolean> clFindNative = CommandLine.makeBoolean("findnative", false,
+      CommandLineOption.Kind.STABLE, "Prints the names of all observed native methods ");
+
 	private class ToolClassVisitor extends ClassVisitor implements Opcodes {
-
 		String owner;
-		public ToolClassVisitor(ClassVisitor cv, String owner) {
-			super(ASM5, cv);
-			this.owner = owner;
-		}
 
-		@Override
-		public void visit(int version, int access, String name,
-				String signature, String superName, String[] interfaces) {
-			super.visit(version, access, name, signature, superName, interfaces);
-		}
+    public ToolClassVisitor(ClassVisitor cv, String owner) {
+      super(ASM5, cv);
+      this.owner = owner;
+    }
 
-		@Override
-		public MethodVisitor visitMethod(int access, String name, String desc,
-				String signature, String[] exceptions) {
-			if (name.startsWith(FIELD_ACCESSOR_NAME_PREFIX)) {
-        System.err.println("Add extension");
-				ThreadStateFieldExtension f = new ThreadStateFieldExtension(owner, "rr/state/ShadowThread", name.substring(7), Type.getReturnType(desc).getDescriptor());
-				SET.addField(f);
-			}
-			return super.visitMethod(access, name, desc, signature, exceptions);
-		}
-
-	}
-
-  private class CmdOptions {
-    private boolean optionsValid = false;
-
-    @Argument
-    private List<String> classes = new ArrayList<String>();
-
-    @Option(name="--outdir",
-            usage="Output directory for instrumented class files",
-            metaVar="<outdir>")
-    private File outdir = new File("./test_out/DoRRInst");
-
-    @Option(name="--tool",
-            usage="Tool class for instrumentation",
-            metaVar="<tool>")
-    private String tool = "tools/fasttrack/FastTrackTool";
-
-    public CmdOptions(String[] args) {
-      ParserProperties prop = ParserProperties.defaults();
-      prop = prop.withUsageWidth(80);
-      CmdLineParser parser = new CmdLineParser(this, prop);
-
-      try {
-        parser.parseArgument(args);
-
-        if (classes.size() == 0) {
-          throw new CmdLineException(parser, Messages.ILLEGAL_LIST,
-              "No class specified");
-        }
-      } catch(CmdLineException e) {
-        System.err.println(e.getMessage());
-        parser.printUsage(System.err);
-        System.err.println();
-        return;
+    @Override
+      public void visit(int version, int access, String name,
+          String signature, String superName, String[] interfaces) {
+        super.visit(version, access, name, signature, superName, interfaces);
       }
 
-      optionsValid = true;
+    @Override
+      public MethodVisitor visitMethod(int access, String name, String desc,
+          String signature, String[] exceptions) {
+        if (name.startsWith(FIELD_ACCESSOR_NAME_PREFIX)) {
+          System.err.println("Add extension");
+          ThreadStateFieldExtension f = new ThreadStateFieldExtension(owner, "rr/state/ShadowThread", name.substring(7), Type.getReturnType(desc).getDescriptor());
+          SET.addField(f);
+        }
+        return super.visitMethod(access, name, desc, signature, exceptions);
+      }
+
+  }
+
+  private static String[] parseOptions(String[] args) {
+    final CommandLine cl = new CommandLine("RRStarter", "???");
+
+		cl.add(new CommandLineOption<Boolean>("help", false, false, CommandLineOption.Kind.STABLE, "Print this message.") {
+			@Override
+			protected void apply(String arg) {
+				Util.error("\n\nEnvironment Variables");
+				Util.error("---------------------");
+				Util.error("  RR_MODE        either FAST or SLOW.  All asserts, logging, and debugging statements\n" +
+				"                 should be nested inside a test ensuring that RR_MODE is SLOW.");
+				Util.error("  RR_META_DATA   The directory created on previous run by -dump from which to reload\n" +
+				"                 cached metadata and instrumented class files.\n");
+				cl.usage();
+				Util.exit(0);
+			}
+		});
+
+		cl.addGroup("General");
+
+		cl.add(clTool);
+		cl.add(clNoInst);
+		cl.add(clFindNative);
+		cl.add(RRSlowpathInst.clNoSlowPath);
+		cl.add(clOutdir);
+
+		cl.add(rr.tool.RR.classPathOption);
+		cl.add(rr.tool.RR.toolPathOption);
+		cl.add(rr.tool.RR.toolOption);
+		cl.add(rr.tool.RR.printToolsOption);
+
+		cl.add(rr.loader.LoaderContext.repositoryPathOption);
+
+		cl.addGroup("Instrumentor");
+		//cl.add(noInstrumentOption);
+		//cl.add(instrumentOption);
+		cl.add(rr.tool.RR.nofastPathOption);
+		cl.add(InstrumentationFilter.classesToWatch);
+		cl.add(InstrumentationFilter.fieldsToWatch);
+		cl.add(InstrumentationFilter.methodsToWatch);
+		cl.add(InstrumentationFilter.linesToWatch);
+
+    // Hacky fasttrack specific options
+		cl.add(InstrumentationFilter.chordFilename);
+		cl.add(InstrumentationFilter.chordElideFilename);
+		cl.add(InstrumentationFilter.bbFilename);
+		cl.add(InstrumentationFilter.lstFilename);
+		cl.add(InstrumentationFilter.lglFilename);
+		cl.add(InstrumentationFilter.ftNoRWInst);
+		//cl.add(InstrumentationFilter.ftNoSyncInst);
+		cl.add(InstrumentationFilter.ftDoStats);
+		cl.add(InstrumentationFilter.ftDoSplits);
+		cl.add(InstrumentationFilter.ftDoSplitsPrint);
+		cl.add(InstrumentationFilter.ftNoMiss);
+		cl.add(InstrumentationFilter.ftMeasureFramework);
+    // End disgusting options
+
+		cl.add(InstrumentationFilter.methodsSupportThreadStateParam);
+		cl.add(InstrumentationFilter.noOpsOption);
+		cl.add(rr.tool.RR.valuesOption);
+		cl.add(ThreadDataThunkInserter.noConstructorOption);
+		cl.add(CloneFixer.noCloneOption);
+		cl.add(rr.tool.RR.noEnterOption);
+		cl.add(rr.tool.RR.noShutdownHookOption);
+		cl.add(Instrumentor.dumpClassOption);
+    cl.add(rr.instrument.classes.ClassInitNotifier.loadClassInitMapping);
+    cl.add(rr.instrument.classes.ClassInitNotifier.saveClassInitMapping);
+		cl.add(InstrumentingDefineClassLoader.sanityOption);
+		cl.add(Instrumentor.fancyOption);
+		cl.add(Instrumentor.verifyOption);
+		cl.add(Instrumentor.trackArraySitesOption);
+		cl.add(Instrumentor.trackReflectionOption);
+		cl.add(ThreadStateExtensionAgent.noDecorationInline);
+		cl.addOrderConstraint(ThreadStateExtensionAgent.noDecorationInline, rr.tool.RR.toolOption);
+
+
+		cl.addGroup("Monitor");
+		cl.add(rr.tool.RR.xmlFileOption);
+		cl.add(rr.tool.RR.noxmlOption);
+		cl.add(rr.tool.RR.stackOption);
+		cl.add(rr.tool.RR.pulseOption);
+		cl.add(rr.tool.RR.noTidGCOption);
+		cl.add(rr.tool.RREventGenerator.noJoinOption);
+		cl.add(rr.tool.RREventGenerator.indicesToWatch);
+		cl.add(rr.tool.RREventGenerator.multiClassLoaderOption);
+		cl.add(rr.tool.RR.forceGCOption);
+		cl.add(Updaters.updateOptions);
+		cl.add(ArrayStateFactory.arrayOption);
+		cl.add(Instrumentor.fieldOption);
+		cl.add(rr.barrier.BarrierMonitor.noBarrier);
+		cl.add(RR.noEventReuseOption);
+		cl.add(AbstractArrayStateCache.noOptimizedArrayLookupOption);
+		//cl.add(infinitelyRunningThreadsOption);
+		cl.add(rr.instrument.methods.ThreadDataInstructionAdapter.callSitesOption);
+		cl.add(rr.tool.RR.trackMemoryUsageOption);
+
+		cl.addGroup("Limits");
+		cl.add(rr.tool.RR.timeOutOption);
+		cl.add(rr.tool.RR.memMaxOption);
+		cl.add(rr.tool.RR.maxTidOption);
+		cl.add(rr.RRMain.availableProcessorsOption);
+		cl.add(rr.error.ErrorMessage.maxWarnOption);
+
+
+		cl.addOrderConstraint(rr.tool.RR.classPathOption, rr.tool.RR.toolOption);
+		cl.addOrderConstraint(rr.tool.RR.toolPathOption, rr.tool.RR.toolOption);
+		cl.addOrderConstraint(rr.tool.RR.toolOption, rr.tool.RR.toolOption);
+		cl.addOrderConstraint(rr.barrier.BarrierMonitor.noBarrier, rr.tool.RR.toolOption);
+
+		int n = cl.apply(args);
+
+    String[] ret = Arrays.copyOfRange(args, n, args.length);
+
+    if (ret.length <= 0) {
+      Util.error("No arguments passed!");
+      cl.usage();
+      Util.exit(1);
     }
 
-    public boolean optionsValid() {
-      return optionsValid;
-    }
-
-    public List<String> classes() {
-      return classes;
-    }
-
-    public File outdir() {
-      return outdir;
-    }
-    
-    public String tool() {
-      return tool;
-    }
+    return ret;
   }
 
   private static void handleError(Exception ex) {
@@ -151,7 +251,7 @@ public class DoRRInst {
     inst.go();
 
     // RR is funky -- force it to stop
-    System.exit(0);
+    Util.exit(0);
   }
 
   private String[] args;
@@ -162,17 +262,15 @@ public class DoRRInst {
 
   public void go() {
     // First, parse options
-    CmdOptions opts = new CmdOptions(args);
+    args = parseOptions(args);
 
-    if (!opts.optionsValid()) {
-      System.exit(1);
-    }
-
-    List<String> baseClasses = opts.classes();
-    String toolClass = opts.tool();
+    List<String> baseClasses = Arrays.asList(args);
+    String toolClass = clTool.get();
 
     baseClasses = cleanNames(baseClasses);
-    File outdir = opts.outdir();
+    File outdir = new File(clOutdir.get());
+
+    baseClasses.add("org.ddevec.slowpath.runtime.MisSpecException");
 
     // Then, get classes (closure)
     Iterable<String> classes = classes = calcClosure(baseClasses);
@@ -182,7 +280,12 @@ public class DoRRInst {
     // Run RR Pre-loadng on all of the classes...
     for (String cname : classes) {
       try {
+        //System.err.println("Getting resource: " + cname);
         URL resource = getClassFile(cname);
+        if (resource == null) {
+          System.err.println("  WARNING: Couldn't find resource!");
+          continue;
+        }
         InputStream is = resource.openStream();
 
         ClassReader cr = new ClassReader(is);
@@ -201,8 +304,8 @@ public class DoRRInst {
 
     //RR.toolOption.checkAndApply("tools/fasttrack/FastTrackTool");
     RR.createDefaultToolIfNecessary();
-    FastTrackTool tool = new FastTrackTool("FastTrack", RR.getTool(), null);
-    RR.setTool(tool);
+    //FastTrackTool tool = new FastTrackTool("FastTrack", RR.getTool(), null);
+    //RR.setTool(tool);
 
     // Finally, foreach class instrument
     for (String classname : classes) {
@@ -222,7 +325,15 @@ public class DoRRInst {
 
           ClassReader cr = new ClassReader(is);
 
-          ClassWriter cw = RRInst.doVisit(cr);
+          ClassWriter cw;
+          if (clNoInst.get()) {
+            cw = new ClassWriter(cr, 0);
+            cr.accept(cw, 0);
+          } else if(clFindNative.get()) {
+            cw = NativeMethodFinder.doVisit(cr);
+          } else {
+            cw = RRSlowpathInst.doVisit(cr);
+          }
           is.close();
 
           String oFileName = getOutputName(outdir.getPath(), classname);
@@ -244,7 +355,8 @@ public class DoRRInst {
     }
 
     List<String> toolInstrClasses = new ArrayList<String>();
-    toolInstrClasses.add(toolClass);
+    //toolInstrClasses.add(toolClass);
+    toolInstrClasses.add("tools/fasttrack/FastTrackTool");
     toolInstrClasses.add("rr/state/ShadowThread");
     // Must also instrument fasttrack tools with ThreadStateFieldExtension
     // Pretty sure that's just FastTrackTool
@@ -324,43 +436,13 @@ public class DoRRInst {
   }
 
   private static boolean shouldInstrument(String classname) {
-    /*
-    if (classname.startsWith("java/lang")) {
-      return false;
-    }
-    if (classname.startsWith("java/security")) {
-      return false;
-    }
-    if (classname.startsWith("java/io")) {
-      return false;
-    }
-    */
-    if (classname.startsWith("__$rr")) {
-      return false;
-    }
-    if (classname.startsWith("rr")) {
-      return false;
-    }
-    if (classname.startsWith("acme")) {
-      return false;
-    }
-    if (classname.startsWith("java")) {
-      return false;
-    }
-    if (classname.startsWith("javax")) {
-      return false;
-    }
-    if (classname.startsWith("sun")) {
-      return false;
-    }
-    if (classname.startsWith("jdk")) {
-      return false;
-    }
-    if (classname.startsWith("org/ddevec/slowpath/runtime")) {
+    if (classname.startsWith("org.ddevec.slowpath.runtime")) {
       return false;
     }
 
-    return true;
+    ClassInfo thisClass = MetaDataInfoMaps.getClass(classname);
+    // Go conservative -- slowpath true
+    return InstrumentationFilter.shouldInstrument(thisClass, true);
   }
 
   private static List<String> cleanNames(List<String> names) {

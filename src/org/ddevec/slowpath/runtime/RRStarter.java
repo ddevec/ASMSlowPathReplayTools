@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.net.URL;
 
 import acme.util.Util;
@@ -33,6 +34,14 @@ import acme.util.option.CommandLine;
 import acme.util.option.CommandLineOption;
 
 public class RRStarter {
+
+  private static CommandLineOption<Boolean> noMeta = CommandLine.makeBoolean("nometa", false,
+      CommandLineOption.Kind.STABLE, "Ignore any meta argument");
+
+  private static CommandLineOption<Boolean> noInst = CommandLine.makeBoolean("noinst", false,
+      CommandLineOption.Kind.STABLE, "Does no instrumentation, just passes " +
+      "the bc files through");
+
   private static String[] parseOptions(String[] args) {
     final CommandLine cl = new CommandLine("RRStarter", "???");
 
@@ -51,6 +60,8 @@ public class RRStarter {
 		});
 
 		cl.addGroup("General");
+
+    cl.add(noMeta);
 
 		cl.add(rr.tool.RR.classPathOption); 
 		cl.add(rr.tool.RR.toolPathOption); 
@@ -91,6 +102,8 @@ public class RRStarter {
 		cl.add(rr.tool.RR.noEnterOption);
 		cl.add(rr.tool.RR.noShutdownHookOption);
 		cl.add(Instrumentor.dumpClassOption);
+    cl.add(rr.instrument.classes.ClassInitNotifier.loadClassInitMapping);
+    cl.add(rr.instrument.classes.ClassInitNotifier.saveClassInitMapping);
 		cl.add(InstrumentingDefineClassLoader.sanityOption);
 		cl.add(Instrumentor.fancyOption);
 		cl.add(Instrumentor.verifyOption);
@@ -141,22 +154,37 @@ public class RRStarter {
   }
 
   public static void main(String[] args) {
+    // Clean args...
+    ArrayList<String> cleanargs = new ArrayList<String>();
+    for (String arg : args) {
+      // Trim empty strings...
+      if (!arg.isEmpty()) {
+        cleanargs.add(arg);
+      }
+    }
+
+    args = cleanargs.toArray(new String[cleanargs.size()]);
 
     args = parseOptions(args);
 
-    System.err.println("RRStarter: IN main?");
-    MetaDataInfoMaps.load(args[0]);
+    int arg_idx = 0;
+    String meta = "-nometa";
+    if (!noMeta.get()) {
+      meta = args[arg_idx];
+      MetaDataInfoMaps.load(meta);
+      arg_idx++;
+    }
+
+    System.err.println("RRStarter: IN main with rr.meta: " + meta);
     RR.createDefaultToolIfNecessary();
-    //RR.setTool(new FastTrackTool("FastTrack", RR.getTool(), null));
-    //RR.setTool(new FastTrackTool("FastTrack", RR.getTool(), null));
+
     RR.createTool("tools.fasttrack.FastTrackTool");
     System.err.println("RRStarter: tool set");
 
-    String[] newargs = Arrays.copyOfRange(args, 2, args.length);
-
     Method m = null;
     try {
-      String classname = args[1];
+      String classname = args[arg_idx];
+      arg_idx++;
 
       Class<?> classArg = Class.forName(classname);
 
@@ -165,7 +193,15 @@ public class RRStarter {
       System.err.println("Well, we failed on RRStarter: " + ex);
       System.exit(1);
     }
+
+    String[] newargs = Arrays.copyOfRange(args, arg_idx, args.length);
       
+    /*
+    System.err.println("Invoke args.length: " + newargs.length);
+    for (int i = 0; i < newargs.length; i++) {
+      System.err.println("  args[" + i + "] " + newargs[i]);
+    }
+    */
     try {
       Instant start = Instant.now();
       m.invoke(null, (Object)newargs);
@@ -182,6 +218,7 @@ public class RRStarter {
       System.exit(1);
     }
 
+    System.err.println("About to call util exit");
     Util.exit(0);
   }
 }

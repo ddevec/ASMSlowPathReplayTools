@@ -94,8 +94,8 @@ public class SlowPathVisitor extends ClassVisitor implements Opcodes {
     }
 
     //mv = new CheckMethodAdapter(mv, version);
-    mv = new CheckMethodAdapter(mv);
-    // FIXME: SCREW INITIALIZERS -- for now
+    //mv = new CheckMethodAdapter(mv);
+    // FIXME: INITIALIZERS ARE EVIL -- for now
     if (name.equals("<init>") || name.equals("<clinit>")) {
       mv = new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
       return mv;

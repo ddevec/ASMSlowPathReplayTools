@@ -164,8 +164,8 @@
                 <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
             </classpath>
 
-            <arg value="--outdir"/>
-            <arg value="test_out/RRSimpleRace"/>
+            <arg value="-classes=-org.apache.lucene.analysis.standard.StandardTokenizerImpl"/>
+            <arg value="-outdir=test_out/RRSimpleRace"/>
             <!--
             <arg value="org.ddevec.slowpath.test.SimpleRace"/>
             -->
@@ -187,7 +187,7 @@
                 <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
             </classpath>
 
-            <arg value="--outdir"/>
+            <arg value="-outdir"/>
             <arg value="test_out/rtest1"/>
             <arg value="org.ddevec.slowpath.test.SimpleRace"/>
             <!--
@@ -222,6 +222,7 @@
     </target>
 
     <target name="rrtest2" depends="jar">
+        <record name="test2.log" action="start"/>
         <java fork="true" classname="${rr-class}">
             <classpath>
                 <path refid="run-classpath"/>
@@ -235,13 +236,21 @@
                 <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
             </classpath>
 
-            <arg value="--outdir"/>
-            <arg value="test_out/rrtest2"/>
+            <arg value="-tool=tools.fasttrack.FastTrackTool"/>
+            <arg value="-outdir=test_out/rrtest2"/>
+            <arg value="-saveClassInitMapping=test_out/class_init.mapping"/>
+            <arg value="-classes=-org.ddevec.slowpath.runtime.*"/>
+            <!--
+            <arg value="-fields=-*.MisSpecException.*"/>
+            -->
+
+            <arg value="test_out/rrtest2/rr.meta"/>
             <arg value="org.ddevec.slowpath.test.SimpleForkJoin"/>
             <!--
             <arg value="org.dacapo.harness.ChordHarness"/>
             -->
         </java>
+        <record name="test2.log" action="stop"/>
     </target>
 
     <target name="rrruntest2" depends="rrtest2">
@@ -264,6 +273,14 @@
                 <path refid="run-classpath"/>
             </classpath>
 
+            <arg value="-tool=tools.fasttrack.FastTrackTool"/>
+            <arg value="-loadClassInitMapping=test_out/class_init.mapping"/>
+            <arg value="-classes=-org.ddevec.slowpath.runtime.*"/>
+            <arg value="-ft-stats"/>
+            <!--
+            <arg value="-fields=-*.MisSpecException.*"/>
+            -->
+
             <arg value="/home/ddevec/OptFT/SlowPath/test_out/rrtest2/rr.meta"/>
             <arg value="org.ddevec.slowpath.test.SimpleForkJoin"/>
         </java>
@@ -283,7 +300,7 @@
                 <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
             </classpath>
 
-            <arg value="--outdir"/>
+            <arg value="-outdir"/>
             <arg value="test_out/rrtest3"/>
             <arg value="org.ddevec.slowpath.test.SimpleMutex"/>
             <!--
@@ -331,7 +348,7 @@
                 <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
             </classpath>
 
-            <arg value="--outdir"/>
+            <arg value="-outdir"/>
             <arg value="test_out/rrtest4"/>
             <arg value="org.ddevec.slowpath.test.SimpleMutexRace"/>
             <!--
@@ -381,7 +398,7 @@
                 <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
             </classpath>
 
-            <arg value="--outdir"/>
+            <arg value="-outdir"/>
             <arg value="test_out/rrtest5"/>
             <arg value="org.ddevec.slowpath.test.SimpleBarrier"/>
             <!--
@@ -431,7 +448,7 @@
                 <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
             </classpath>
 
-            <arg value="--outdir"/>
+            <arg value="-outdir"/>
             <arg value="test_out/rrtest6"/>
             <arg value="org.ddevec.slowpath.test.SimpleBarrierRace"/>
             <!--
@@ -481,7 +498,7 @@
                 <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
             </classpath>
 
-            <arg value="--outdir"/>
+            <arg value="-outdir"/>
             <arg value="test_out/rrtest7"/>
             <arg value="org.ddevec.slowpath.test.SimpleSignalWait"/>
             <!--
@@ -515,7 +532,89 @@
         </java>
     </target>
 
+    <target name="rrtest8" depends="jar">
+        <java fork="true" classname="${rr-class}">
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+            <classpath>
+                <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+            </classpath>
+
+            <arg value="-outdir=test_out/rrtest8"/>
+            <arg value="-classes=+java.*"/>
+            <arg value="-classes=+javax.*"/>
+            <arg value="-classes=+com.sun*"/>
+            <arg value="-classes=+sun*"/>
+            <arg value="-classes=+org.xml*"/>
+            <arg value="-findnative"/>
+            <arg value="-quiet"/>
+            <arg value="org.ddevec.slowpath.runtime.RRStarter"/>
+            <!--
+            <arg value="org.dacapo.harness.ChordHarness"/>
+            -->
+        </java>
+    </target>
+
+    <target name="RecClassTest" depends="jar">
+        <java fork="true" classname="org.ddevec.record.instr.ClassRecordLogCreator">
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+            <classpath>
+                <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+            </classpath>
+
+            <arg value="-outdir=test_out/RecClassTest"/>
+            <arg value="-native-method-file=native_methods_test.csv"/>
+            <!--
+            <arg value="org.dacapo.harness.ChordHarness"/>
+            -->
+        </java>
+    </target>
+
+    <target name="NMRecTest" depends="jar">
+        <java fork="true" classname="org.ddevec.record.tools.NativeMethodInstrumentor">
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+            <classpath>
+                <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+                <pathelement location="./test_classes"/>
+            </classpath>
+
+            <arg value="-outdir=test_out/NMRecTest"/>
+            <arg value="-native-method-file=native_methods_test.csv"/>
+            <arg value="TestThree"/>
+            <!--
+            <arg value="org.dacapo.harness.ChordHarness"/>
+            -->
+        </java>
+    </target>
+
     <target name="runrr" depends="jar">
+        <record name="log/test8.log" action="start"/>
         <java fork="true" classname="org.ddevec.slowpath.runtime.RRStarter" dir="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch">
 
             <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
@@ -538,13 +637,13 @@
             <!--
             <arg value="org.ddevec.slowpath.test.SimpleRace"/>
             -->
-            <arg value="-help"/>
             <arg value="/home/ddevec/OptFT/SlowPath/test_out/RRSimpleRace/rr.meta"/>
             <arg value="org.dacapo.harness.ChordHarness"/>
             <arg value="lusearch"/>
             <arg value="-s"/>
             <arg value="default"/>
         </java>
+        <record name="log/test8.log" action="stop"/>
     </target>
 
 

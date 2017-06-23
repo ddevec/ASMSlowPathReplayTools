@@ -24,9 +24,17 @@ public class MethodDuplicator extends MethodVisitor implements Opcodes {
 
   private ArrayList<MVRunner> visits;
   private HashMap<Label, Label> labelRemap;
+  private MethodVisitor callVisit;
 
   public MethodDuplicator(int api, MethodVisitor mv) {
+    this(api, mv, null);
+  }
+
+  public MethodDuplicator(int api, MethodVisitor mv, MethodVisitor callVisit) {
     super(api, mv);
+    
+    // FIXME: Super hacky -- but i just gotta get it working...
+    this.callVisit = callVisit;
 
     labelRemap = new HashMap<Label, Label>();
     visits = new ArrayList<MVRunner>();
@@ -55,11 +63,15 @@ public class MethodDuplicator extends MethodVisitor implements Opcodes {
 
   @Override
   public void visitCode() {
+    /*
     addRunner(new MVRunner() {
           public void run(MethodVisitor mv) {
             mv.visitCode();
           }
         });
+    */
+
+    System.err.println("At visitCode()");
 
     super.visitCode();
   }
@@ -297,3 +309,4 @@ public class MethodDuplicator extends MethodVisitor implements Opcodes {
     super.visitEnd();
   }
 }
+
