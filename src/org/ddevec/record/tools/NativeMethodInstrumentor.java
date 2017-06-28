@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +35,7 @@ import org.ddevec.record.instr.ClassRecordLogCreator;
 import org.ddevec.record.instr.NativeMethodFinder;
 import org.ddevec.record.instr.NativeMethodSet;
 import org.ddevec.record.instr.NativeMethodCleaner;
+import org.ddevec.record.instr.RecordEntry;
 
 import org.ddevec.slowpath.instr.Analysis;
 import org.ddevec.slowpath.analysis.ReachingClassAnalysis;
@@ -58,6 +60,13 @@ public class NativeMethodInstrumentor {
         CommandLineOption.Kind.STABLE,
         "File to read which Native methods should be analyzed for record/replay");
 
+  private static CommandLineOption<Boolean> clFindNative = CommandLine.makeBoolean("findnative", false,
+      CommandLineOption.Kind.STABLE, "Prints the names of all observed native methods ");
+
+  private abstract class ClassInstrumentor {
+    public abstract ClassVisitor getCv(ClassVisitor cv);
+  }
+
   private static String[] parseOptions(String[] args) {
     final CommandLine cl = new CommandLine("RRStarter", "???");
 
@@ -79,6 +88,7 @@ public class NativeMethodInstrumentor {
 
 		cl.add(clOutdir);
 		cl.add(clNativeMethodFile);
+		cl.add(clFindNative);
 
 		cl.addGroup("Instrumentor");
 		cl.add(rr.tool.RR.nofastPathOption);
@@ -133,8 +143,34 @@ public class NativeMethodInstrumentor {
     // Then, get classes (closure)
     Iterable<String> classes = classes = calcClosure(baseClasses);
 
+    // First, load up all oru native methods and dump them in our native method
+    //   file
+    if (clFindNative.get()) {
+      ArrayList<RecordEntry> entries = new ArrayList<RecordEntry>();
+      instrumentClasses(classes, null, 
+          new ClassInstrumentor() {
+            @Override
+            public ClassVisitor getCv(ClassVisitor cv) {
+              return new NativeMethodFinder(cv, entries);
+            }
+          }, false);
+
+      try (PrintWriter pr = new PrintWriter(clNativeMethodFile.get())) {
+        for (RecordEntry re : entries) {
+          pr.println(re.getTuple());
+        }
+      } catch (IOException ex) {
+        ex.printStackTrace();
+        System.exit(1);
+      }
+    }
+
     // First, lets prep those native method wrappers
     NativeMethodSet nms = new NativeMethodSet(clNativeMethodFile.get());
+    System.err.println("NMS has entries:");
+    for (RecordEntry e : nms.getEntries()) {
+      System.err.println("  " + e);
+    }
 
     ClassRecordLogCreator crlc = new ClassRecordLogCreator(nms);
     crlc.createAllRecordClasses(clOutdir.get());
@@ -143,17 +179,31 @@ public class NativeMethodInstrumentor {
     // FIRST: Recording
     // Finally, foreach class instrument
     File recordOutdir = new File(outdir, "record");
-    instrumentClasses(classes, nms, recordOutdir, ClassRecordLogCreator.RecordWrapperFcn, "initializeRecord");
+    instrumentClasses(classes, recordOutdir,
+        new ClassInstrumentor() {
+          @Override
+          public ClassVisitor getCv(ClassVisitor cv) {
+            return new NativeMethodCleaner(cv, nms.getEntries(),
+              ClassRecordLogCreator.RecordWrapperFcn, "initializeRecord");
+          }
+        }, false);
 
     File replayOutdir = new File(outdir, "replay");
-    instrumentClasses(classes, nms, replayOutdir, ClassRecordLogCreator.ReplayWrapperFcn, "initializeReplay");
+    instrumentClasses(classes, replayOutdir, 
+        new ClassInstrumentor() {
+          @Override
+          public ClassVisitor getCv(ClassVisitor cv) {
+            return new NativeMethodCleaner(cv, nms.getEntries(),
+              ClassRecordLogCreator.ReplayWrapperFcn, "initializeReplay");
+          }
+        }, false);
   }
 
-  private void instrumentClasses(Iterable<String> classes, NativeMethodSet nms,
-      File outdir, String wrapperFcn, String initFcn) {
+  private void instrumentClasses(Iterable<String> classes, File outdir,
+      ClassInstrumentor classInsn, boolean doShouldInstrument) {
     for (String classname : classes) {
-      if (shouldInstrument(classname)) {
-        System.err.println("Instrumenting: " + classname);
+      if (!doShouldInstrument || shouldInstrument(classname)) {
+        //System.err.println("Instrumenting: " + classname);
         URL resource = getClassFile(classname);
 
         if (resource == null) {
@@ -168,26 +218,30 @@ public class NativeMethodInstrumentor {
 
           cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
           ClassVisitor cv = new CheckClassAdapter(cw);
+
           // Do actual instrumentation
-          cv = new NativeMethodCleaner(cv, nms.getEntries(), wrapperFcn, initFcn);
+          // cv = new NativeMethodCleaner(cv, nms.getEntries(), wrapperFcn, initFcn);
+          cv = classInsn.getCv(cv);
 
           cr.accept(cv, ClassReader.EXPAND_FRAMES);
         } catch (IOException ex) {
           handleError(ex);
         }
 
-        String oFileName = getOutputName(outdir.getPath(), classname);
-        File oFile = new File(oFileName);
-        File parent = oFile.getParentFile();
+        if (outdir != null) {
+          String oFileName = getOutputName(outdir.getPath(), classname);
+          File oFile = new File(oFileName);
+          File parent = oFile.getParentFile();
 
-        if (!parent.exists()) {
-          parent.mkdirs();
-        }
+          if (!parent.exists()) {
+            parent.mkdirs();
+          }
 
-        try (OutputStream os = new FileOutputStream(oFile)) {
-          os.write(cw.toByteArray());
-        } catch (IOException ex) {
-          handleError(ex);
+          try (OutputStream os = new FileOutputStream(oFile)) {
+            os.write(cw.toByteArray());
+          } catch (IOException ex) {
+            handleError(ex);
+          }
         }
       }
     }

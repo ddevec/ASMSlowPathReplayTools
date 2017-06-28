@@ -6,14 +6,18 @@ public class RecordEntry implements Serializable {
   public String classname;
   public String methodname;
   public String desc;
+  public boolean isStatic;
 
-  public RecordEntry(String classname, String methodname, String desc) {
+  public RecordEntry(String classname, String methodname, String desc,
+      boolean isStatic) {
     this.classname = classname;
     this.methodname = methodname;
     this.desc = desc;
+    this.isStatic = isStatic;
   }
 
   public static RecordEntry parse(String commaSep) {
+    System.err.println("Parsing line: " + commaSep);
     commaSep = commaSep.trim();
 
     // Ignore empty line
@@ -23,15 +27,18 @@ public class RecordEntry implements Serializable {
 
     String[] elms = commaSep.split(",");
 
-    if (elms.length != 3) {
+    if (elms.length != 4) {
       return null;
     }
 
     String classname = elms[0].trim();
     String methodname = elms[1].trim();
     String desc = elms[2].trim();
+    boolean isStatic = Boolean.parseBoolean(elms[3].trim());
 
-    return new RecordEntry(classname, methodname, desc);
+    RecordEntry ret = new RecordEntry(classname, methodname, desc, isStatic);
+    System.err.println("Got entry: " + ret);
+    return ret;
   }
 
   @Override
@@ -64,6 +71,10 @@ public class RecordEntry implements Serializable {
     return rhs.classname.equals(classname) &&
       rhs.methodname.equals(methodname) &&
       rhs.desc.equals(desc);
+  }
+
+  public String getTuple() {
+    return classname + "," + methodname + "," + desc + "," + isStatic;
   }
 
   public String getLogClassname() {

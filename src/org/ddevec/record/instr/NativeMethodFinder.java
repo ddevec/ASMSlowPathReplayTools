@@ -15,6 +15,9 @@ import rr.instrument.classes.JVMVersionNumberFixer;
 
 import java.io.StringWriter;
 import java.io.PrintWriter;
+import java.io.IOException;
+
+import java.util.ArrayList;
 
 /**
  * Finds native methods that need to be recorded
@@ -22,8 +25,11 @@ import java.io.PrintWriter;
 public class NativeMethodFinder extends ClassVisitor implements Opcodes {
   private String classname;
 
-  public NativeMethodFinder(ClassVisitor parent) {
+  ArrayList<RecordEntry> entries;
+
+  public NativeMethodFinder(ClassVisitor parent, ArrayList<RecordEntry> entries) {
     super(ASM5, parent);
+    this.entries = entries;
   }
 
   @Override
@@ -40,23 +46,19 @@ public class NativeMethodFinder extends ClassVisitor implements Opcodes {
     MethodVisitor ret = cv.visitMethod(access, name, desc, signature,
         exceptions);
 
+    // System.err.println("VISITING METHOD: " + name);
     if ((access & ACC_NATIVE) != 0) {
-      /*
-      System.err.println("  Have native method: " + name);
-      System.err.println("    Desc: " + desc);
-      if (signature != null) {
-        System.err.println("    Signature: " + signature);
-      }
-      if (exceptions != null) {
-        for (int i = 0; i < exceptions.length; i++) {
-          System.err.println("      ex: " + exceptions[i]);
-        }
-      }
-      */
-      System.err.println(classname + "," + name + "," + desc);
+      // System.err.println("    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!NATIVE!!!!!!!!!!!!!!!!!!!");
+      entries.add(new RecordEntry(classname, name, desc, 
+            (access & ACC_STATIC) != 0));
     }
 
     return ret;
+  }
+
+  @Override
+  public void visitEnd() {
+    super.visitEnd();
   }
 
   public static ClassWriter doVisit(ClassReader cr) {
@@ -64,7 +66,7 @@ public class NativeMethodFinder extends ClassVisitor implements Opcodes {
         ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
 
     ClassVisitor cv = cw;
-    cv = new NativeMethodFinder(cv);
+    // cv = new NativeMethodFinder(cv);
 
     cv = new JVMVersionNumberFixer(cv);
 

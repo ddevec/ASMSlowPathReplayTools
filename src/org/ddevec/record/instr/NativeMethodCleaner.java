@@ -33,7 +33,13 @@ public class NativeMethodCleaner extends ClassVisitor {
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
       // If this is a call to one of our native methods, kill it
-      RecordEntry target = new RecordEntry(owner, name, desc);
+      boolean isStatic = opcode == INVOKESTATIC;
+      RecordEntry target = new RecordEntry(owner, name, desc, isStatic);
+      if (classname.startsWith("TestThree")) {
+        System.err.println("VisitMethod: " + owner + "." + name);
+        System.err.println("  " + target);
+        System.err.println("  " + target.getTuple());
+      }
       if (entries.contains(target)) {
         String recordWrapperDesc = ClassRecordLogCreator.getRecordWrapperDesc(target);
         // Call our record wrapper function
@@ -85,7 +91,8 @@ public class NativeMethodCleaner extends ClassVisitor {
   @Override
   public MethodVisitor visitMethod(int access, String name, String desc,
       String signature, String[] exceptions) {
-    RecordEntry methodRecord = new RecordEntry(classname, name, desc);
+    RecordEntry methodRecord = new RecordEntry(classname, name, desc, 
+        (access & Opcodes.ACC_STATIC) != 0);
     MethodVisitor mv = null;
 
     // Assume native?

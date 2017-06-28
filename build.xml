@@ -605,7 +605,10 @@
             </classpath>
 
             <arg value="-outdir=test_out/NMRecTest"/>
-            <arg value="-native-method-file=native_methods_test.csv"/>
+            <arg value="-native-method-file=native_methods_out.csv"/>
+            <!--
+            <arg value="-findnative"/>
+            -->
             <arg value="TestThree"/>
             <!--
             <arg value="org.dacapo.harness.ChordHarness"/>

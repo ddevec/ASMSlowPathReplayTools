@@ -83,8 +83,8 @@ public class ClassRecordLogCreator implements Opcodes {
     createEquals(cv, classname, retType, argTypes);
 
     // And finally, the static wrapper method
-    createRecordWrapper(cv, classname, retType, argTypes, entry);
-    createReplayWrapper(cv, classname, retType, argTypes, entry);
+    createRecordWrapper(cv, classname, retType, argTypes, entry, entry.isStatic);
+    createReplayWrapper(cv, classname, retType, argTypes, entry, entry.isStatic);
 
     cv.visitEnd();
   }
@@ -116,6 +116,26 @@ public class ClassRecordLogCreator implements Opcodes {
       // Load the arg
       consVisitor.visitVarInsn(t.getOpcode(Opcodes.ILOAD), idxOffs);
       idxOffs += t.getSize();
+
+      // If it is an array, or object, create a copy of it -- ugh
+      int sort = t.getSort();
+      if (sort == Type.ARRAY) {
+        Type elmType = t.getElementType();
+        consVisitor.visitInsn(DUP);
+        consVisitor.visitInsn(ARRAYLENGTH);
+        //consVisitor.visitFieldInsn(GETFIELD, t.getDescriptor(), "length", Type.INT_TYPE.getDescriptor());
+        // Call Arrays.copyOf(array, array.length)
+        consVisitor.visitMethodInsn(INVOKESTATIC, "java/util/Arrays", "copyOf",
+            Type.getMethodDescriptor(t, t, Type.INT_TYPE), false);
+        
+      } else if (sort == Type.OBJECT) {
+        /*
+        System.err.println("Have type: " + t);
+        System.err.println("Don't support object types yet");
+        new Exception("Unsupported").printStackTrace();
+        System.exit(1);
+        */
+      }
 
       consVisitor.visitFieldInsn(PUTFIELD, classname, "arg" + idx, t.getDescriptor());
 
@@ -267,20 +287,35 @@ public class ClassRecordLogCreator implements Opcodes {
     Type retType = methodType.getReturnType();
     Type[] argTypes = methodType.getArgumentTypes();
 
-    Type[] ret = new Type[argTypes.length + 1];
+    Type[] newArgTypes;
+    if (entry.isStatic) {
+      newArgTypes = argTypes;
+    } else {
+      newArgTypes = new Type[argTypes.length + 1];
 
-    ret[0] = thisType;
-    System.arraycopy(argTypes, 0, ret, 1, argTypes.length);
+      newArgTypes[0] = thisType;
+      System.arraycopy(argTypes, 0, newArgTypes, 1, argTypes.length);
+    }
 
-    return Type.getMethodDescriptor(retType, ret);
+    return Type.getMethodDescriptor(retType, newArgTypes);
   }
 
   private static void createRecordWrapper(ClassVisitor cv, String classname,
-      Type retType, Type[] argTypes, RecordEntry entry) {
-    Type[] thisArgTypes = new Type[argTypes.length+1];
-    thisArgTypes[0] = Type.getType("L" + entry.classname + ";");
-    // Copy the old args through
-    System.arraycopy(argTypes, 0, thisArgTypes, 1, argTypes.length);
+      Type retType, Type[] argTypes, RecordEntry entry, boolean isStatic) {
+
+    Type[] thisArgTypes;
+    int argOffs;
+
+    if (isStatic) {
+      thisArgTypes = argTypes;
+      argOffs = 0;
+    } else {
+      thisArgTypes = new Type[argTypes.length+1];
+      thisArgTypes[0] = Type.getType("L" + entry.classname + ";");
+      // Copy the old args through
+      System.arraycopy(argTypes, 0, thisArgTypes, 1, argTypes.length);
+      argOffs = 1;
+    }
 
     MethodVisitor mv = cv.visitMethod(ACC_PUBLIC | ACC_STATIC,
         RecordWrapperFcn,
@@ -307,9 +342,13 @@ public class ClassRecordLogCreator implements Opcodes {
     mv.visitMethodInsn(INVOKESTATIC, RecordLogClass, "setInNativeWrapper", Type.getMethodDescriptor(Type.VOID_TYPE, Type.BOOLEAN_TYPE), false);
 
     // Call the native method
-    // Load args for the antive method
+    // Load args for the native method
     loadArgs(mv, thisArgTypes, 0);
-    mv.visitMethodInsn(INVOKEVIRTUAL, entry.classname, entry.methodname, entry.desc, false);
+    if (isStatic) {
+      mv.visitMethodInsn(INVOKESTATIC, entry.classname, entry.methodname, entry.desc, false);
+    } else {
+      mv.visitMethodInsn(INVOKEVIRTUAL, entry.classname, entry.methodname, entry.desc, false);
+    }
 
     // Store the return position -- if there is one
     int retPos = maxLocal;
@@ -325,7 +364,7 @@ public class ClassRecordLogCreator implements Opcodes {
     mv.visitInsn(DUP);
 
     // Now, args
-    loadArgs(mv, argTypes, 1);
+    loadArgs(mv, argTypes, argOffs);
 
     // Invoke init
     mv.visitMethodInsn(INVOKESPECIAL, classname, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, argTypes), false);
@@ -354,8 +393,13 @@ public class ClassRecordLogCreator implements Opcodes {
     mv.visitLabel(callAndExitLabel);
     // Load this
     loadArgs(mv, thisArgTypes, 0);
-    // Then call the native method
-    mv.visitMethodInsn(INVOKEVIRTUAL, entry.classname, entry.methodname, entry.desc, false);
+
+    // Then call native method
+    if (isStatic) {
+      mv.visitMethodInsn(INVOKESTATIC, entry.classname, entry.methodname, entry.desc, false);
+    } else {
+      mv.visitMethodInsn(INVOKEVIRTUAL, entry.classname, entry.methodname, entry.desc, false);
+    }
     mv.visitLabel(returnLabel);
 
     mv.visitInsn(retType.getOpcode(IRETURN));
@@ -364,11 +408,21 @@ public class ClassRecordLogCreator implements Opcodes {
   }
 
   private static void createReplayWrapper(ClassVisitor cv, String classname,
-      Type retType, Type[] argTypes, RecordEntry entry) {
-    Type[] thisArgTypes = new Type[argTypes.length+1];
-    thisArgTypes[0] = Type.getType("L" + entry.classname + ";");
-    // Copy the old args through
-    System.arraycopy(argTypes, 0, thisArgTypes, 1, argTypes.length);
+      Type retType, Type[] argTypes, RecordEntry entry, boolean isStatic) {
+
+    Type[] thisArgTypes;
+    int argOffs;
+
+    if (isStatic) {
+      thisArgTypes = argTypes;
+      argOffs = 0;
+    } else {
+      thisArgTypes = new Type[argTypes.length+1];
+      thisArgTypes[0] = Type.getType("L" + entry.classname + ";");
+      // Copy the old args through
+      System.arraycopy(argTypes, 0, thisArgTypes, 1, argTypes.length);
+      argOffs = 1;
+    }
 
     MethodVisitor mv = cv.visitMethod(ACC_PUBLIC | ACC_STATIC,
         ReplayWrapperFcn,
@@ -402,7 +456,7 @@ public class ClassRecordLogCreator implements Opcodes {
     mv.visitInsn(DUP);
 
     // Now, args
-    loadArgs(mv, argTypes, 1);
+    loadArgs(mv, argTypes, argOffs);
 
     // Invoke init
     mv.visitMethodInsn(INVOKESPECIAL, classname, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, argTypes), false);
@@ -442,7 +496,11 @@ public class ClassRecordLogCreator implements Opcodes {
     mv.visitLabel(callAndExitLabel);
     loadArgs(mv, thisArgTypes, 0);
     // Then call the native method
-    mv.visitMethodInsn(INVOKEVIRTUAL, entry.classname, entry.methodname, entry.desc, false);
+    if (isStatic) {
+      mv.visitMethodInsn(INVOKESTATIC, entry.classname, entry.methodname, entry.desc, false);
+    } else {
+      mv.visitMethodInsn(INVOKEVIRTUAL, entry.classname, entry.methodname, entry.desc, false);
+    }
 
     // Then return the ret
     mv.visitLabel(returnLabel);
