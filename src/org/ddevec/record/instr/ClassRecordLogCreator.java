@@ -58,8 +58,7 @@ public class ClassRecordLogCreator implements Opcodes {
     Type retType = methodType.getReturnType();
 
     // Add a field per arg type
-    cv.visitField(ACC_PRIVATE | ACC_STATIC | ACC_FINAL, "TypeId", Type.INT_TYPE.getDescriptor(), null, new Integer(idVal));
-    idVal++;
+    cv.visitField(ACC_PRIVATE | ACC_STATIC | ACC_FINAL, "TypeId", Type.INT_TYPE.getDescriptor(), null, new Integer(getNextId()));
     
     for (int i = 0; i < argTypes.length; i++) {
       Type argType = argTypes[i];
@@ -87,6 +86,18 @@ public class ClassRecordLogCreator implements Opcodes {
     createReplayWrapper(cv, classname, retType, argTypes, entry, entry.isStatic);
 
     cv.visitEnd();
+  }
+
+  // FIXME: Make persistent across executions, without requiring static classes
+  //   init same way?
+  public static int getNextOpcode(String name) {
+    return getNextId();
+  }
+
+  private static int getNextId() {
+    int ret = idVal;
+    idVal++;
+    return ret;
   }
 
   private static void createConstructor(ClassVisitor cv, String classname, Type[] argTypes) {

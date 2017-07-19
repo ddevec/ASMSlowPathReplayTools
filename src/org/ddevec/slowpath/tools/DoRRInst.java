@@ -100,21 +100,21 @@ public class DoRRInst {
     }
 
     @Override
-      public void visit(int version, int access, String name,
-          String signature, String superName, String[] interfaces) {
-        super.visit(version, access, name, signature, superName, interfaces);
-      }
+    public void visit(int version, int access, String name,
+        String signature, String superName, String[] interfaces) {
+      super.visit(version, access, name, signature, superName, interfaces);
+    }
 
     @Override
-      public MethodVisitor visitMethod(int access, String name, String desc,
-          String signature, String[] exceptions) {
-        if (name.startsWith(FIELD_ACCESSOR_NAME_PREFIX)) {
-          System.err.println("Add extension");
-          ThreadStateFieldExtension f = new ThreadStateFieldExtension(owner, "rr/state/ShadowThread", name.substring(7), Type.getReturnType(desc).getDescriptor());
-          SET.addField(f);
-        }
-        return super.visitMethod(access, name, desc, signature, exceptions);
+    public MethodVisitor visitMethod(int access, String name, String desc,
+        String signature, String[] exceptions) {
+      if (name.startsWith(FIELD_ACCESSOR_NAME_PREFIX)) {
+        System.err.println("Add extension");
+        ThreadStateFieldExtension f = new ThreadStateFieldExtension(owner, "rr/state/ShadowThread", name.substring(7), Type.getReturnType(desc).getDescriptor());
+        SET.addField(f);
       }
+      return super.visitMethod(access, name, desc, signature, exceptions);
+    }
 
   }
 
@@ -267,14 +267,18 @@ public class DoRRInst {
     List<String> baseClasses = Arrays.asList(args);
     String toolClass = clTool.get();
 
+    // second, get classes (closure)
     baseClasses = cleanNames(baseClasses);
+
     File outdir = new File(clOutdir.get());
 
+    // Add runtime classes (if needed -- analysis dependant)
     baseClasses.add("org.ddevec.slowpath.runtime.MisSpecException");
 
     // Then, get classes (closure)
     Iterable<String> classes = classes = calcClosure(baseClasses);
 
+    // Setup loader context
     LoaderContext loader = new LoaderContext(getClass().getClassLoader());
 
     // Run RR Pre-loadng on all of the classes...
@@ -302,11 +306,14 @@ public class DoRRInst {
       }
     }
 
+    // Post-preload run setup stuffs
+
     //RR.toolOption.checkAndApply("tools/fasttrack/FastTrackTool");
     RR.createDefaultToolIfNecessary();
     //FastTrackTool tool = new FastTrackTool("FastTrack", RR.getTool(), null);
     //RR.setTool(tool);
 
+    // Now do real instrumentations...
     // Finally, foreach class instrument
     for (String classname : classes) {
       if (shouldInstrument(classname)) {
@@ -354,6 +361,7 @@ public class DoRRInst {
       }
     }
 
+    // Then -- do any tool-specific instrumentation
     List<String> toolInstrClasses = new ArrayList<String>();
     //toolInstrClasses.add(toolClass);
     toolInstrClasses.add("tools/fasttrack/FastTrackTool");

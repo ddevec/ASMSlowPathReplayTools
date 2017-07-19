@@ -27,6 +27,8 @@ import rr.org.objectweb.asm.Opcodes;
 import rr.org.objectweb.asm.Type;
 import rr.org.objectweb.asm.util.CheckClassAdapter;
 
+import rr.loader.LoaderContext;
+import rr.loader.MetaDataBuilder;
 import rr.meta.ClassInfo;
 import rr.meta.InstrumentationFilter;
 import rr.meta.MetaDataInfoMaps;
@@ -35,6 +37,7 @@ import org.ddevec.record.instr.ClassRecordLogCreator;
 import org.ddevec.record.instr.NativeMethodFinder;
 import org.ddevec.record.instr.NativeMethodSet;
 import org.ddevec.record.instr.NativeMethodCleaner;
+import org.ddevec.record.instr.ThreadInstrumentor;
 import org.ddevec.record.instr.RecordEntry;
 
 import org.ddevec.slowpath.instr.Analysis;
@@ -65,6 +68,10 @@ public class NativeMethodInstrumentor {
 
   private abstract class ClassInstrumentor {
     public abstract ClassVisitor getCv(ClassVisitor cv);
+  }
+
+  private abstract class ClassVisitWrapper {
+    public abstract void visit(ClassReader rd);
   }
 
   private static String[] parseOptions(String[] args) {
@@ -138,13 +145,26 @@ public class NativeMethodInstrumentor {
     List<String> baseClasses = Arrays.asList(args);
 
     baseClasses = cleanNames(baseClasses);
+
     File outdir = new File(clOutdir.get());
 
     // Then, get classes (closure)
     Iterable<String> classes = classes = calcClosure(baseClasses);
 
-    // First, load up all oru native methods and dump them in our native method
-    //   file
+    LoaderContext loader = new LoaderContext(getClass().getClassLoader());
+
+    // Pre-load the classes
+    visitClasses(classes,
+        new ClassVisitWrapper() {
+          @Override
+          public void visit(ClassReader cr) {
+            MetaDataBuilder.preLoadFully(loader, cr);
+            initFileHandles(cr.getClassName());
+          }
+        });
+
+    // Now do our instrumentation -- in steps.
+    // First, find natives if needed
     if (clFindNative.get()) {
       ArrayList<RecordEntry> entries = new ArrayList<RecordEntry>();
       instrumentClasses(classes, null, 
@@ -172,9 +192,11 @@ public class NativeMethodInstrumentor {
       System.err.println("  " + e);
     }
 
+    // Now, pre-setup our record classes
     ClassRecordLogCreator crlc = new ClassRecordLogCreator(nms);
     crlc.createAllRecordClasses(clOutdir.get());
     
+    // Then, instrument all the classes
     // Instrument twice -- once to record wrappers once to replay wrappers
     // FIRST: Recording
     // Finally, foreach class instrument
@@ -183,8 +205,11 @@ public class NativeMethodInstrumentor {
         new ClassInstrumentor() {
           @Override
           public ClassVisitor getCv(ClassVisitor cv) {
-            return new NativeMethodCleaner(cv, nms.getEntries(),
+            ClassVisitor cv1 = new NativeMethodCleaner(cv, nms.getEntries(),
               ClassRecordLogCreator.RecordWrapperFcn, "initializeRecord");
+            // False -- is not replay
+            cv1 = new ThreadInstrumentor(cv1, false);
+            return cv1;
           }
         }, false);
 
@@ -193,8 +218,11 @@ public class NativeMethodInstrumentor {
         new ClassInstrumentor() {
           @Override
           public ClassVisitor getCv(ClassVisitor cv) {
-            return new NativeMethodCleaner(cv, nms.getEntries(),
+            ClassVisitor cv1 = new NativeMethodCleaner(cv, nms.getEntries(),
               ClassRecordLogCreator.ReplayWrapperFcn, "initializeReplay");
+            // true -- is replay
+            cv1 = new ThreadInstrumentor(cv1, true);
+            return cv1;
           }
         }, false);
   }
@@ -243,6 +271,29 @@ public class NativeMethodInstrumentor {
             handleError(ex);
           }
         }
+      }
+    }
+  }
+
+  private void visitClasses(Iterable<String> classes, ClassVisitWrapper cvw) {
+  for (String classname : classes) {
+      //System.err.println("Instrumenting: " + classname);
+      URL resource = getClassFile(classname);
+
+      if (resource == null) {
+        System.err.println("WARNING: Couldn't find Resource: " + classname);
+        continue;
+      }
+
+      ClassWriter cw = null;
+      try (InputStream is = resource.openStream()) {
+        ClassReader cr = new ClassReader(is);
+
+        // Do actual instrumentation
+        // cv = new NativeMethodCleaner(cv, nms.getEntries(), wrapperFcn, initFcn);
+        cvw.visit(cr);
+      } catch (IOException ex) {
+        handleError(ex);
       }
     }
   }
@@ -339,5 +390,20 @@ public class NativeMethodInstrumentor {
 
   public String getOutputName(String basedir, String classname) {
     return basedir + '/' + classNameToClassFile(classname);
+  }
+
+  public void initFileHandles(String classname) {
+    /*
+    // This is the "default" guess at source file name if we can't 
+    // extract it from the class file.
+    String fileName = classname;
+    ClassInfo currentClass = MetaDataInfoMaps.getClass(fileName);
+    if (fileName.contains("$")) {
+    fileName = fileName.substring(0, fileName.indexOf("$"));
+    }
+    fileName += ".java";
+    final ClassContext ctxt = Instrumentor.classContext.get(currentClass);
+    ctxt.setFileName(fileName);
+    */
   }
 }

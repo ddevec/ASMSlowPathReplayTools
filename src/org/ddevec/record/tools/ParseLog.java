@@ -33,12 +33,15 @@ public class ParseLog {
     // Open the log file
     try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filename))) {
       // Read objects from it
+      int entryNum = 0;
       while (true) {
         // Cast them to RecordLogEntry
         RecordLogEntry entry = (RecordLogEntry)ois.readObject();
         
         // Print them (using reflection dump garbage)
-        entry.print();
+        System.out.println("entryNum: " + entryNum);
+        entryNum++;
+        entry.print(System.out, 1);
       }
     } catch (EOFException ex) {
       // all good.

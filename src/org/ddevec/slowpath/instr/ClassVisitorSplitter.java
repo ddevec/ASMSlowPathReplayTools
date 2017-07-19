@@ -20,12 +20,18 @@ import java.util.HashSet;
 public class ClassVisitorSplitter extends ClassVisitor {
 
   private int nSplits = 0;
+  private int cvnEnds = 0;
 
   // Only forwards the last call to visitCode and visitEnd...
   private class ForwardLastVisitor extends MethodVisitor {
     private int nVisits = 0;
     private int nEnds = 0;
     private int nSplits = 0;
+
+    private int nMaxs = 0;
+    private int maxL = 0;
+    private int maxS = 0;
+    private boolean maxsDone = false;
 
     public ForwardLastVisitor(MethodVisitor mv, int nSplits) {
       super(Opcodes.ASM5, mv);
@@ -45,7 +51,22 @@ public class ClassVisitorSplitter extends ClassVisitor {
     public void visitEnd() {
       nEnds++;
       if (nEnds == nSplits) {
+        if (!maxsDone) {
+          super.visitMaxs(this.maxL, this.maxS);
+          maxsDone = true;
+        }
         super.visitEnd();
+      }
+    }
+
+    @Override
+    public void visitMaxs(int maxL, int maxS) {
+      nMaxs++;
+      this.maxL = Math.max(this.maxL, maxL);
+      this.maxS = Math.max(this.maxS, maxS);
+      if (nMaxs == nSplits && !maxsDone) {
+        maxsDone = true;
+        super.visitMaxs(this.maxL, this.maxS);
       }
     }
   }
@@ -143,8 +164,6 @@ public class ClassVisitorSplitter extends ClassVisitor {
 
   private HashSet<Attribute> visitAttributes =
     new HashSet<Attribute>();
-
-  private boolean visitEnds = false;
 
   private class FieldArgs {
     public int access;
@@ -470,9 +489,9 @@ public class ClassVisitorSplitter extends ClassVisitor {
 
   @Override
   public void visitEnd() {
-    if (!visitEnds) {
+    cvnEnds++;
+    if (cvnEnds == nSplits) {
       super.visitEnd();
-      visitEnds = true;
     }
   }
 

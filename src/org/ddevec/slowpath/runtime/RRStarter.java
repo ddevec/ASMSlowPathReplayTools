@@ -67,6 +67,8 @@ public class RRStarter {
 		cl.add(rr.tool.RR.toolPathOption); 
 		cl.add(rr.tool.RR.toolOption);
 		cl.add(rr.tool.RR.printToolsOption); 
+		cl.add(rr.tool.RR.recordLogOption); 
+		cl.add(rr.tool.RR.recordDebugFileOption); 
 
 		cl.add(rr.loader.LoaderContext.repositoryPathOption);
 
@@ -178,7 +180,7 @@ public class RRStarter {
     System.err.println("RRStarter: IN main with rr.meta: " + meta);
     RR.createDefaultToolIfNecessary();
 
-    RR.createTool("tools.fasttrack.FastTrackTool");
+    // RR.createTool("tools.fasttrack.FastTrackTool");
     System.err.println("RRStarter: tool set");
 
     Method m = null;

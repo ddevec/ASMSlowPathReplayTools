@@ -59,7 +59,7 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
 
     if (ret == null) {
       ret = new Label();
-      //System.out.println("LabelRemap: " + orig + " -> " + ret);
+      System.out.println("LabelRemap: " + orig + " -> " + ret);
       labelRemap.put(orig, ret);
     }
 
@@ -79,6 +79,7 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
     System.err.println("Visit fast_end: " + fast_end);
     super.visitLabel(fast_end);
     //super.visitInsn(opcode);
+    System.err.println("  slow_start label: " + slow_start);
     mv2.visitLabel(slow_start);
 
     for (Runnable visit : visitAtEnd) {
@@ -86,6 +87,7 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
     }
 
     System.err.println("Adding end insn -- label to " + methodName);
+    System.err.println("  label: " + end);
     mv2.visitLabel(end);
     System.err.println("Adding end insn -- RETURN to " + methodName);
     System.err.println("  Return Type: " + retType);
@@ -168,7 +170,7 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
         opcode == ARETURN) {
       // Instead add goto end
       retType = opcode;
-      System.err.println("Prepping Jump to end!");
+      System.err.println("Prepping Jump to end: " + end);
       super.visitJumpInsn(GOTO, end);
       addRunner(new Runnable() {
             public void run() {
@@ -244,6 +246,7 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
     if (!insAfterSpecial) {
       super.visitFieldInsn(GETSTATIC, flagClassName, flagVarName, flagType);
       // branch to slow if flag is not zero
+      System.err.println("Preppign jump to slow: " + slow);
       super.visitJumpInsn(IFNE, slow);
     }
     if (insAfterSpecial && opcode == INVOKESPECIAL) {
@@ -267,9 +270,11 @@ public class CloneMethodVisitor extends MethodVisitor implements Opcodes {
     addRunner(new Runnable() {
           public void run() {
             Label remap = labelRemap(label);
+            System.err.println("visitJump remap: " + remap);
             mv2.visitJumpInsn(opcode, remap);
           }
         });
+    System.err.println("visitJump label: " + label);
     super.visitJumpInsn(opcode, label);
   }
 

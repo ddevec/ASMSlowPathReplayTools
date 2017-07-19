@@ -34,37 +34,38 @@ public class DebugVisitor extends ClassVisitor {
     
     @Override
     public void visitCode() {
-      System.err.println(prefix + ": VisitCode");
+      //System.err.println(prefix + ": VisitCode");
       super.visitCode();
     }
 
     @Override public void visitInsn(int insn) {
-      System.err.println(prefix + ": visitInsn: " + insn);
+      //System.err.println(prefix + ": visitInsn: " + insn);
       super.visitInsn(insn);
     }
 
-    /*
     @Override
     public void visitLabel(Label lbl) {
-      defined.add(lbl);
+      //defined.add(lbl);
+      System.err.println(prefix + ": Visit label: " + lbl);
       super.visitLabel(lbl);
     }
 
     @Override
     public void visitJumpInsn(int opcode, Label label) {
-      used.add(label);
+      //System.err.println(prefix + ": Jump to label: " + label);
+      //new Exception("stack-trace").printStackTrace(System.err);
+      super.visitJumpInsn(opcode, label);
     }
-    */
 
     @Override
     public void visitMaxs(int maxL, int maxS) {
-      System.err.println(prefix + ": visitMaxs(" + maxL + ", " + maxS + ")");
+      //System.err.println(prefix + ": visitMaxs(" + maxL + ", " + maxS + ")");
       super.visitMaxs(maxL, maxS);
     }
 
     @Override
     public void visitEnd() {
-      System.err.println(prefix + ": VisitEnd");
+      //System.err.println(prefix + ": VisitEnd");
       super.visitEnd();
     }
   }

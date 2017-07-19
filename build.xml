@@ -606,10 +606,80 @@
 
             <arg value="-outdir=test_out/NMRecTest"/>
             <arg value="-native-method-file=native_methods_out.csv"/>
+            <arg value="-classes=+java.io.*"/>
+            <!--<arg value="-classes=+java.util.*"/>-->
+            <arg value="-classes=+java.nio.*"/>
             <!--
             <arg value="-findnative"/>
             -->
-            <arg value="TestThree"/>
+            <arg value="TestFour"/>
+            <!--
+            <arg value="org.dacapo.harness.ChordHarness"/>
+            -->
+        </java>
+    </target>
+
+    <target name="InstrTest" depends="jar">
+        <java fork="true" classname="org.ddevec.asm.tools.AsmInstrumentor">
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+            <classpath>
+                <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+                <pathelement location="./test_classes"/>
+            </classpath>
+
+
+            <arg value="-instr=org.ddevec.record.instr.RecordInstrumentation"/>
+            <arg value="-outdir=test_out/InstrTest"/>
+            <arg value="-native-method-file=native_methods_out.csv"/>
+            <arg value="-classes=+java.io.*"/>
+            <!--<arg value="-classes=+java.util.*"/>-->
+            <arg value="-classes=+java.nio.*"/>
+            <!--
+            <arg value="-findnative"/>
+            -->
+            <arg value="TestFour"/>
+            <!--
+            <arg value="org.dacapo.harness.ChordHarness"/>
+            -->
+        </java>
+    </target>
+
+    <target name="RRInstrTest" depends="jar">
+        <java fork="true" classname="org.ddevec.asm.tools.AsmInstrumentor">
+            <jvmarg value="-Xbootclasspath/p:/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+            <classpath>
+                <path refid="run-classpath"/>
+                <!--
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/test_out/ClassInstrumentor"/>
+                -->
+                <pathelement location="/home/ddevec/OptFT/SlowPath/bootstrap/"/>
+                <pathelement location="/home/ddevec/OptFT/RoadRunner/jars/java-cup-11a.jar"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/data"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/shared/dacapo-9.12/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/classes"/>
+                <pathelement location="/home/ddevec/OptFT/pjbench/dacapo/benchmarks/lusearch/jar/lucene-core-2.4.jar"/>
+                <pathelement location="./test_classes"/>
+            </classpath>
+
+
+            <arg value="-instr=org.ddevec.slowpath.instr.RRInstrumentation"/>
+            <arg value="-outdir=test_out/RRInstrTest"/>
+            <arg value="-classes=+java.io.*"/>
+            <!--<arg value="-classes=+java.util.*"/>-->
+            <arg value="-classes=+java.nio.*"/>
+            <!--
+            <arg value="-findnative"/>
+            -->
+            <arg value="TestFour"/>
             <!--
             <arg value="org.dacapo.harness.ChordHarness"/>
             -->

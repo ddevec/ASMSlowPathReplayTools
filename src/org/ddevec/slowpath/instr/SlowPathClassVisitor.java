@@ -58,18 +58,18 @@ public class SlowPathClassVisitor extends RRClassAdapter implements Opcodes {
   }
 
   private class MethodDuplicatorInfo {
-      public MethodDuplicator dupe;
-      public int access;
-      public String signature;
-      public String[] exceptions;
+    public MethodDuplicator dupe;
+    public int access;
+    public String signature;
+    public String[] exceptions;
 
-      public MethodDuplicatorInfo(MethodDuplicator dupe, int access,
-              String signature, String[] exceptions) {
-          this.dupe = dupe;
-          this.access = access;
-          this.signature = signature;
-          this.exceptions = exceptions;
-      }
+    public MethodDuplicatorInfo(MethodDuplicator dupe, int access,
+        String signature, String[] exceptions) {
+      this.dupe = dupe;
+      this.access = access;
+      this.signature = signature;
+      this.exceptions = exceptions;
+    }
   }
 
   private HashMap<MethodInfo, MethodDuplicatorInfo> toDupe;
@@ -101,8 +101,7 @@ public class SlowPathClassVisitor extends RRClassAdapter implements Opcodes {
     System.out.println("  access: " + access);
 
     if ((access & Opcodes.ACC_ABSTRACT) != 0) {
-        System.err.println("    ABSTRACT -- skipping");
-        return null;
+      return super.visitMethod(access, name, desc, signature, exceptions);
     }
     System.err.println("    NOT ABSTRACT -- go for it");
 
@@ -110,7 +109,13 @@ public class SlowPathClassVisitor extends RRClassAdapter implements Opcodes {
     // FIXME: INITIALIZERS ARE EVIL -- for now
     if (name.equals("<init>") || name.equals("<clinit>")) {
       //mv = new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
+      //
       // We do slowpath here to be conservative...
+      MethodVisitor fastpathMv = this.cv.visitMethod(access, name, desc, signature, exceptions);
+      fastpathMv.visitCode();
+      fastpathMv.visitMaxs(3, 3);
+      fastpathMv.visitEnd();
+
       return slowpathCv.visitMethod(access, name, desc, signature, exceptions);
     }
 
@@ -118,13 +123,20 @@ public class SlowPathClassVisitor extends RRClassAdapter implements Opcodes {
     // If this is a slowpath method, only do slowpath code
     if (name.startsWith(SlowPathRetarget.SlowPathPrefix)) {
       System.err.println("Creating SP-only fcn");
+
+      // Make dummy fp visitor, to satisfy assumption of 2x visits
+      MethodVisitor fastpathMv = this.cv.visitMethod(access, name, desc, signature, exceptions);
+      fastpathMv.visitCode();
+      fastpathMv.visitMaxs(3, 3);
+      fastpathMv.visitEnd();
+
       mv = slowpathCv.visitMethod(access, name, desc, signature, exceptions);
       mv = new PrintVisitor(ASM5, mv,
           "In SlowPath: " + name + "!");
 
       mv = new SlowPathRetarget(ASM5, mv);
 
-    // If it is a fastpath then add fastpath + xfer code
+      // If it is a fastpath then add fastpath + xfer code
     } else {
       System.err.println("Creating FP-SP fcn");
       MethodVisitor mv2 = slowpathCv.visitMethod(access, name, desc, signature,
@@ -136,8 +148,8 @@ public class SlowPathClassVisitor extends RRClassAdapter implements Opcodes {
       mv = new CloneMethodVisitor(ASM5, name, mv, mv2);
 
       MethodDuplicatorInfo dmv = new MethodDuplicatorInfo(
-              new MethodDuplicator(ASM5, mv),
-              access, signature, exceptions);
+          new MethodDuplicator(ASM5, mv),
+          access, signature, exceptions);
       ClassInfo owner = context.getRRClass();
       MethodInfo myInfo = MetaDataInfoMaps.getMethod(owner, name, desc);
       toDupe.put(myInfo, dmv);
@@ -164,7 +176,7 @@ public class SlowPathClassVisitor extends RRClassAdapter implements Opcodes {
 
       // Need to initialize the new method... somehow
       MethodInfo newMethod = MetaDataInfoMaps.getMethod(info.getOwner(),
-              name, info.getDescriptor());
+          name, info.getDescriptor());
       newMethod.setFlags(info);
 
       MethodContext oldContext = Instrumentor.methodContext.get(info);
@@ -173,8 +185,8 @@ public class SlowPathClassVisitor extends RRClassAdapter implements Opcodes {
 
       System.err.println("Visiting SP-only function");
       MethodVisitor mv = visitMethod(access, name,
-              info.getDescriptor(),
-              signature, exceptions);
+          info.getDescriptor(),
+          signature, exceptions);
       cloner.doVisits(mv);
       System.err.println("Ending on SP function");
       mv.visitEnd();
